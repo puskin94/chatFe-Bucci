@@ -9,6 +9,8 @@
 #include "utils.h"
 #include "common.h"
 #include "hash.h"
+#include "chat-server.h"
+
 
 
 /* TODO LIST
@@ -19,24 +21,29 @@ readUserFile: implementare l'inserimento nella lista
 */
 
 
+char *userFile;
+char *logFile;
+
+
 int main(int argc, char *argv[]) {
 
-    int pid, readFile, writeToLogExit;
+    int pid;
 
     if (argc < 3) {
         fprintf(stderr,"Wrong param number\n");
         return -1;
     }
 
-    char *userFile = argv[1];
-    char *logFile = argv[2];
+    userFile = argv[1];
+    logFile = argv[2];
 
     pid = fork();
 
     // funzioni del figlio
     if (pid == 0) {
+
         // read user-file
-        if (readUserFile(userFile)) {
+        if (readUserFile()) {
             printf("[+] SERVER INFO: loaded user-file\n");
         } else {
             printf("[!] SERVER INFO: cannot load user-file\n");
@@ -44,7 +51,7 @@ int main(int argc, char *argv[]) {
         }
 
         // write first message to log-file
-        if (createLogFile(logFile)) {
+        if (createLogFile()) {
             printf("[+] SERVER INFO: loaded log-file\n");
         } else {
             printf("[!] SERVER INFO: cannot load log-file\n");

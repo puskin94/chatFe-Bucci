@@ -5,6 +5,9 @@
 #include <time.h>
 #include <sys/time.h>
 
+#include "chat-server.h"
+
+
 void timestamp(char * ts) {
     time_t t;
     t = time(NULL);
@@ -12,9 +15,35 @@ void timestamp(char * ts) {
     ts[strlen(ts)-1] = '\0';
 }
 
-bool createLogFile(char *file) {
+void writeToLog(char message[100]) {
 
-    FILE *logFile;
+    FILE *fp;
+    fp = fopen(logFile, "a");
+
+    fprintf(fp,"%s\n", message);
+    fclose(fp);
+
+}
+
+void buildError(char message[100]) {
+
+    char ts[64];
+    char errorMsg[200] = "";
+    timestamp(ts);
+    strcat(errorMsg, ts);
+    strcat(errorMsg, " : ");
+    strcat(errorMsg, message);
+    strcat(errorMsg, "\n");
+
+    fprintf(stderr,errorMsg);
+    writeToLog(errorMsg);
+
+}
+
+
+bool createLogFile() {
+
+    FILE *fp;
 
     char ts[64];
     char delimiter[100] = "**************************************************\n";
@@ -32,9 +61,10 @@ bool createLogFile(char *file) {
     strcat(firstMessage, "\n");
     strcat(firstMessage, delimiter);
 
-    logFile = fopen(file, "w");
-    if (logFile != NULL) {
-        if (fprintf(logFile,"%s\n", firstMessage)) {
+    fp = fopen(logFile, "w");
+    if (fp != NULL) {
+        if (fprintf(fp,"%s\n", firstMessage)) {
+            fclose(fp);
             return true;
         } else {
             fprintf(stderr,"Cannot write to log-file. Quitting...\n");
@@ -46,9 +76,9 @@ bool createLogFile(char *file) {
     }
 }
 
-bool readUserFile(char *file) {
+bool readUserFile() {
 
-    FILE *userFile;
+    FILE *fp;
     char *line = NULL;
     char userInfo[771]; // 768 == (256 * 3) + 2 + 1 --> (single max lenght + 2 (:) + 1 (\0))
 
@@ -56,9 +86,9 @@ bool readUserFile(char *file) {
     char *fullName;
     char *mail;
 
-    userFile = fopen(file, "r+");
-    if (userFile != NULL) {
-        while (fgets (userInfo, sizeof(userInfo), userFile)) {
+    fp = fopen(userFile, "r+");
+    if (fp != NULL) {
+        while (fgets (userInfo, sizeof(userInfo), fp)) {
             userName = strtok (userInfo, ":");
             fullName = strtok (NULL, ":");
             mail = strtok (NULL, ":");
@@ -68,11 +98,11 @@ bool readUserFile(char *file) {
         }
 
     } else {
-        fprintf(stderr,"Error reading userFile\n");
+        buildError("Cannot load userFile. Quitting...");
         return false;
     }
 
-    fclose(userFile);
+    fclose(fp);
     return true;
 
 }

@@ -6,9 +6,9 @@
 
 /* Prototypes declaration */
 
-bool readUserFile(char *file);
-//void writeToLog(char *file, char *message);
-bool createLogFile(char *file);
+bool readUserFile();
+bool createLogFile();
+void writeToLog(char message[100]);
 void timestamp(char * ts);
 
 /* End Declaration */
