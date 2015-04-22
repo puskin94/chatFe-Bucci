@@ -3,7 +3,13 @@
 /*************************************/
 
 #ifndef LISTA_H
-#define LISTA_H 
+#define LISTA_H
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include <unistd.h>
 
 typedef struct cella * lista;
 typedef lista          posizione;
@@ -17,7 +23,7 @@ struct cella {
 
 lista CREALISTA () {
   lista L;
-  L = (lista) malloc(sizeof (struct cella) ); 
+  L = (lista) malloc(sizeof (struct cella) );
   L->successivo = L;
   L->precedente = L;
   return L;
@@ -30,7 +36,7 @@ int LISTAVUOTA (lista L) {
   return listavuota;
 }
 
-  
+
 posizione PRIMOLISTA (lista L) {
   return L->successivo;
 }
@@ -55,37 +61,37 @@ int FINELISTA (posizione p, lista L) {
   int finelista;
   finelista = (p == L) ? 1 : 0;
   return finelista;
-} 
+}
 
 
 void INSLISTA (void * data, posizione * p) {
   struct cella * tmp;
-  
+
   tmp = (struct cella *) malloc(sizeof(struct cella));
-  
-  tmp->precedente = (*p)->precedente; 
+
+  tmp->precedente = (*p)->precedente;
   tmp->successivo = (*p);
-  
+
   tmp->elemento = data;
-  
+
   (*p)->precedente->successivo = tmp;
   (*p)->precedente             = tmp;
-  
+
   (*p) = tmp;
 }
 
 
 void CANCLISTA (posizione * p) {
   posizione tmp;
-  
+
   tmp = (*p);
-  
+
   (*p)->precedente->successivo = (*p)->successivo;
   (*p)->successivo->precedente = (*p)->precedente;
-  
+
   (*p) = (*p)->successivo;
-  
-  free(tmp);  
+
+  free(tmp);
 }
 
 #endif

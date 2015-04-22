@@ -1,12 +1,14 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <stdbool.h>
+
 
 /* Prototypes declaration */
 
-int readUserFile(char *file);
+bool readUserFile(char *file);
 //void writeToLog(char *file, char *message);
-int createLogFile(char *file);
+bool createLogFile(char *file);
 void timestamp(char * ts);
 
 /* End Declaration */

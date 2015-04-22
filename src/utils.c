@@ -12,40 +12,41 @@ void timestamp(char * ts) {
     ts[strlen(ts)-1] = '\0';
 }
 
-int createLogFile(char *file) {
+bool createLogFile(char *file) {
 
     FILE *logFile;
 
     char ts[64];
-    char delimiter[100] = "**************************************\n";
-    char semiDelimiter[100] = " *** ";
+    char delimiter[100] = "**************************************************\n";
+    char semiDelimiterL[100] = "***  ";
+     char semiDelimiterR[100] = " ***";
     char firstMessage[600] = "";
     timestamp(ts);
 
 
     strcat(firstMessage, delimiter);
-    strcat(firstMessage, semiDelimiter);
+    strcat(firstMessage, semiDelimiterL);
     strcat(firstMessage, "Server Started @ ");
     strcat(firstMessage, ts);
-    strcat(firstMessage, semiDelimiter);
+    strcat(firstMessage, semiDelimiterR);
     strcat(firstMessage, "\n");
     strcat(firstMessage, delimiter);
 
     logFile = fopen(file, "w");
     if (logFile != NULL) {
         if (fprintf(logFile,"%s\n", firstMessage)) {
-            return 0;
+            return true;
         } else {
             fprintf(stderr,"Cannot write to log-file. Quitting...\n");
-            return -4;
+            return false;
         }
     } else {
         fprintf(stderr,"Cannot create log-file. Quitting...\n");
-        return -5;
+        return false;
     }
 }
 
-int readUserFile(char *file) {
+bool readUserFile(char *file) {
 
     FILE *userFile;
     char *line = NULL;
@@ -68,10 +69,10 @@ int readUserFile(char *file) {
 
     } else {
         fprintf(stderr,"Error reading userFile\n");
-        return -2;
+        return false;
     }
 
     fclose(userFile);
-    return 0;
+    return true;
 
 }
