@@ -8,8 +8,9 @@
 
 bool readUserFile();
 bool createLogFile();
-void writeToLog(char message[100]);
+void writeToLog(char message[200]);
 void timestamp(char * ts);
+void buildLog(char message[100], int action);
 
 /* End Declaration */
 

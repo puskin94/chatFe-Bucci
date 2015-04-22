@@ -15,7 +15,7 @@ void timestamp(char * ts) {
     ts[strlen(ts)-1] = '\0';
 }
 
-void writeToLog(char message[100]) {
+void writeToLog(char message[200]) {
 
     FILE *fp;
     fp = fopen(logFile, "a");
@@ -25,17 +25,23 @@ void writeToLog(char message[100]) {
 
 }
 
-void buildError(char message[100]) {
+void buildLog(char message[100], int action) {
+
+    // if action == 0 -> normal message
+    // if action == 1 -> error message
 
     char ts[64];
     char errorMsg[200] = "";
     timestamp(ts);
     strcat(errorMsg, ts);
-    strcat(errorMsg, " : ");
+    strcat(errorMsg, ":");
     strcat(errorMsg, message);
     strcat(errorMsg, "\n");
 
-    fprintf(stderr,errorMsg);
+    if (action == 1) {
+        fprintf(stderr,errorMsg);
+    }
+
     writeToLog(errorMsg);
 
 }
@@ -91,14 +97,18 @@ bool readUserFile() {
         while (fgets (userInfo, sizeof(userInfo), fp)) {
             userName = strtok (userInfo, ":");
             fullName = strtok (NULL, ":");
-            mail = strtok (NULL, ":");
+            mail = strtok (NULL, ":\n");
 
-            // Qua ci va l'inserimento dei dati nella struttuta ( hash table )
+            if (userName != NULL && fullName != NULL && mail != NULL) {
+
+                // Qua ci va l'inserimento dei dati nella struttuta ( hash table )
+
+            }
 
         }
 
     } else {
-        buildError("Cannot load userFile. Quitting...");
+        buildLog("Cannot load userFile. Quitting...", 1);
         return false;
     }
 
