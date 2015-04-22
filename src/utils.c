@@ -5,8 +5,12 @@
 #include <time.h>
 #include <sys/time.h>
 
-#include "chat-server.h"
+#include "include/chat-server.h"
+#include "include/utils.h"
+#include "include/hash.h"
 
+
+// funzione suggerita in classe per la creazione di un timestamp
 
 void timestamp(char * ts) {
     time_t t;
@@ -15,6 +19,7 @@ void timestamp(char * ts) {
     ts[strlen(ts)-1] = '\0';
 }
 
+// consente la scrittura di messaggi sull'apposito file
 void writeToLog(char message[200]) {
 
     FILE *fp;
@@ -25,6 +30,9 @@ void writeToLog(char message[200]) {
 
 }
 
+/* funzione che ha il compito di 'costruire' il testo per il file di log
+includendo timestamp ed il messaggio stesso. Il messaggio viene stampato
+anche su STDERR al variare dell' intero 'action' */
 void buildLog(char message[100], int action) {
 
     // if action == 0 -> normal message
@@ -46,7 +54,9 @@ void buildLog(char message[100], int action) {
 
 }
 
-
+/* funzione chiamata ad ogni avvio del server. Ha il compito di
+verificare se il file di log esiste. In tal caso stampa su di esso
+una intestazione che ne indica la data di avvio */
 bool createLogFile() {
 
     FILE *fp;
@@ -80,39 +90,4 @@ bool createLogFile() {
         fprintf(stderr,"Cannot create log-file. Quitting...\n");
         return false;
     }
-}
-
-bool readUserFile() {
-
-    FILE *fp;
-    char *line = NULL;
-    char userInfo[771]; // 768 == (256 * 3) + 2 + 1 --> (single max lenght + 2 (:) + 1 (\0))
-
-    char *userName;
-    char *fullName;
-    char *mail;
-
-    fp = fopen(userFile, "r+");
-    if (fp != NULL) {
-        while (fgets (userInfo, sizeof(userInfo), fp)) {
-            userName = strtok (userInfo, ":");
-            fullName = strtok (NULL, ":");
-            mail = strtok (NULL, ":\n");
-
-            if (userName != NULL && fullName != NULL && mail != NULL) {
-
-                // Qua ci va l'inserimento dei dati nella struttuta ( hash table )
-
-            }
-
-        }
-
-    } else {
-        buildLog("Cannot load userFile. Quitting...", 1);
-        return false;
-    }
-
-    fclose(fp);
-    return true;
-
 }

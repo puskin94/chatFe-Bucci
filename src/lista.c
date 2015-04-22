@@ -1,10 +1,3 @@
-/*************************************/
-/* Library list: schifano 2013       */
-/*************************************/
-
-#ifndef LISTA_H
-#define LISTA_H
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -90,5 +83,3 @@ void CANCLISTA (posizione * p) {
 
   free(tmp);
 }
-
-#endif

@@ -1,17 +1,10 @@
-/*************************************/
-/* Library hash: schifano fabio 2013 */
-/*************************************/
-
-#ifndef HASH_H
-#define HASH_H
-
 #include <string.h>
 
-#include "common.h"
-#include "lista.h"
+#include <common.h>
+#include <lista.h>
 
 /* numero primo */
-#define HL 997 
+#define HL 997
 
 typedef lista * hash_t;
 
@@ -55,7 +48,7 @@ hash_t CREAHASH () {
   int i;
   H = (hash_t) malloc(HL*sizeof(lista));
   for ( i=0; i < HL; i++ ) {
-    H[i] = CREALISTA(); 
+    H[i] = CREALISTA();
   }
   return H;
 }
@@ -63,7 +56,7 @@ hash_t CREAHASH () {
 //////////////////////////////////////////////////////////////////////
 // cerca un elemento nella tabella Hash
 // restituisce un "hdata_t *" oppure NULL se non esiste
- 
+
 void * CERCAHASH(char * key, hash_t H) {
   int i;
   i = hashfunc(key);
@@ -79,11 +72,8 @@ void INSERISCIHASH (char * key, hdata_t * elem, hash_t H) {
   i = hashfunc(key);
   if ( CERCAHASH(key, H) == NULL ) {
     p = PRIMOLISTA(H[i]);
-    INSLISTA((void *)elem, &p); 
+    INSLISTA((void *)elem, &p);
   }
 }
 
 //////////////////////////////////////////////////////////////////////
-
-#endif
-
