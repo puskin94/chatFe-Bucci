@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include <time.h>
 #include <sys/time.h>
 #include <sys/socket.h>
@@ -23,7 +24,6 @@ void *launchThreadMain() {
 
     struct sockaddr_in server;
     struct sockaddr_in client;
-
 
     // read user-file
     if (readUserFile()) {
@@ -72,7 +72,7 @@ void *launchThreadMain() {
     }
 
     close(newConn);
-    //close(sockId);
+    close(sockId);
 
 }
 
@@ -85,7 +85,6 @@ bool readUserFile() {
     static hash_t HASH_TABLE;
 
     FILE *fp;
-    char *line = NULL;
     char userInfo[771]; // 768 == (256 * 3) + 2 + 1 --> (single max lenght + 2 (:) + 1 (\0))
 
     char *userName;
