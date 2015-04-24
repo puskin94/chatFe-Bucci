@@ -47,15 +47,14 @@ int main(int argc, char *argv[]) {
         // Viene creato il thread Main con l'attributo di 'detached'
         // e gli viene imposta l'esecuzione della funzione 'launchThreadMain'
 
-        pthread_attr_init(&attr);
-        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-
-        if (pthread_create(&threadMain, NULL, &launchThreadMain, &attr)!= 0) {
+        if (pthread_create(&threadMain, &attr, &launchThreadMain, NULL)!= 0) {
             buildLog("Failed to create threadMain", 1);
             return -5;
         } else {
             printf("[+] ThreadMain is running...\n");
         }
+
+        pthread_join(threadMain, NULL) ;
 
     } else if (pid < 0) {
         buildLog("[!] Cannot create child process", 1);

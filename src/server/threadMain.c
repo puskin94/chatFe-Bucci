@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "include/chat-server.h"
 #include "include/utils.h"
@@ -16,14 +17,26 @@
 
 #define PORT 7777
 
+bool go = true;
+int sockId;
 
-void *launchThreadMain() {
+void sighand(int sig) {
+    if ( sig == SIGINT || sig == SIGTERM) {
+        buildLog("CTRL-C Received. Quitting", 1);
+        go = false;
+        close(sockId);
+    }
+}
+
+
+void *launchThreadMain(void *arg) {
 
     int sockId, newConn, len, retval;
-    bool go = true;
 
     struct sockaddr_in server;
     struct sockaddr_in client;
+
+    signal(SIGINT, sighand);
 
     // read user-file
     if (readUserFile()) {
@@ -49,11 +62,11 @@ void *launchThreadMain() {
 
     sockId = socket(AF_INET, SOCK_STREAM, 0);
 
-    if ( bind(sockId, (struct sockaddr *)&server, sizeof(server)) < 0 ) {
+    if (bind(sockId, (struct sockaddr *)&server, sizeof(server)) < 0) {
         buildLog("Cannot bind on port",1);
     }
 
-    printf("[+] Listening on port %d\n", PORT);
+    //printf("[+] Listening on port %d\n", PORT);
     listen(sockId, SOMAXCONN);
 
     len = sizeof(struct sockaddr_in);
@@ -72,7 +85,9 @@ void *launchThreadMain() {
     }
 
     close(newConn);
-    close(sockId);
+    //close(sockId);
+
+    return NULL;
 
 }
 

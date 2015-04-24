@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <sys/time.h>
+#include <signal.h>
 
 #include "include/chat-server.h"
 #include "include/utils.h"
