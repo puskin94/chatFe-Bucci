@@ -25,7 +25,7 @@ void writeToLog(char message[200]) {
     FILE *fp;
     fp = fopen(logFile, "a");
 
-    fprintf(fp,"%s\n", message);
+    fprintf(fp,"%s", message);
     fclose(fp);
 
 }
@@ -62,10 +62,10 @@ bool createLogFile() {
     FILE *fp;
 
     char ts[64];
-    char delimiter[100] = "**************************************************\n";
-    char semiDelimiterL[100] = "***  ";
-     char semiDelimiterR[100] = " ***";
-    char firstMessage[600] = "";
+    char delimiter[52] = "**************************************************\n";
+    char semiDelimiterL[5] = "***  ";
+     char semiDelimiterR[4] = " ***";
+    char firstMessage[300] = "";
     timestamp(ts);
 
 

@@ -1,7 +1,8 @@
 #include <string.h>
 
-#include <common.h>
-#include <lista.h>
+#include "include/common.h"
+#include "include/lista.h"
+#include "include/hash.h"
 
 /* numero primo */
 #define HL 997

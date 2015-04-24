@@ -18,7 +18,7 @@ struct cella {
 };
 
 
-lista CREALISTA () ;
+lista CREALISTA ();
 
 int LISTAVUOTA (lista L);
 
@@ -32,7 +32,7 @@ posizione ULTIMOLISTA (lista L);
 posizione SUCCLISTA (posizione p);
 
 
-posizione PREDLISTA (posizione p) ;
+posizione PREDLISTA (posizione p);
 
 
 int FINELISTA (posizione p, lista L);
@@ -41,6 +41,6 @@ int FINELISTA (posizione p, lista L);
 void INSLISTA (void * data, posizione * p);
 
 
-void CANCLISTA (posizione * p) ;
+void CANCLISTA (posizione * p);
 
 #endif

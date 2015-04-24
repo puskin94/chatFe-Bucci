@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-int launchThreadMain();
+void *launchThreadMain();
 bool readUserFile();
 
 #endif
