@@ -10,7 +10,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 
-#include "utils.h"
+#include "include/utils.h"
 
 #define PORT 7777
 #define MAXCONNTENT 10
