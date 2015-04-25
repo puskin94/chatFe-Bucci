@@ -14,6 +14,7 @@
 
 #define PORT 7777
 #define MAXCONNTENT 10
+#define SERVERIP "127.0.0.1"
 
 int main(int argc, char *argv[]) {
 
@@ -24,7 +25,7 @@ int main(int argc, char *argv[]) {
 
     client.sin_family = AF_INET;
     client.sin_port = htons(PORT);
-    client.sin_addr.s_addr = inet_addr("127.0.0.1"); // ip del server
+    client.sin_addr.s_addr = inet_addr(SERVERIP); // ip del server
 
     sockId = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -40,6 +41,9 @@ int main(int argc, char *argv[]) {
     if ( (strcmp(argv[1], "-h") == 0) ||
         ((strcmp(argv[1], "-r") == 0) && argc == 6) ||
         (argc == 2) ) {
+
+        // Il client prova a connettersi al server remoto per un massimo di
+        // MAXCONNTENT volte
 
         while (connect(sockId, (struct sockaddr *)&client, sizeof(client)) < 0 && count < MAXCONNTENT) {
             printf("Server unreachable. Attempt n.%d\n", count+1);
