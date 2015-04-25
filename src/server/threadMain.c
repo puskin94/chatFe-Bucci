@@ -14,6 +14,7 @@
 #include "include/chat-server.h"
 #include "include/utils.h"
 #include "include/hash.h"
+#include "include/threadWorker.h"
 
 #define PORT 7777
 
@@ -35,6 +36,14 @@ void *launchThreadMain(void *arg) {
 
     struct sockaddr_in server;
     struct sockaddr_in client;
+
+    // generazione del threadWorker
+    pthread_t threadWorker;
+    pthread_attr_t attr;
+
+    // aggiunta dell'attributo 'detached'
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
     signal(SIGINT, sighand);
 
@@ -75,11 +84,12 @@ void *launchThreadMain(void *arg) {
 
         newConn = accept(sockId, (struct sockaddr *)&client, (socklen_t *)&len);
 
-        if (newConn == -1) {
+        if(newConn == -1) {
             buildLog("Cannot accept new connections", 1);
         } else {
-            buildLog("[+] Acquired new Client", 0);
-            printf("[+] Acquired new Client\n");
+            if(pthread_create(&threadWorker, &attr, &launchThreadWorker, NULL)!= 0) {
+                buildLog("Failed to create threadMain", 1);
+            }
         }
 
     }
