@@ -16,6 +16,16 @@
 #define MAXCONNTENT 10
 #define SERVERIP "127.0.0.1"
 
+
+#define MSG_LOGIN "L"
+#define MSG_RELOG "R"
+#define MSG_OK "O"
+#define MSG_ERROR "E"
+#define MSG_SINGLE "S"
+#define MSG_BRDCAST "B"
+#define MSG_LIST "I"
+#define MSG_LOGOUT "X"
+
 int main(int argc, char *argv[]) {
 
     struct sockaddr_in client;
@@ -70,7 +80,10 @@ int main(int argc, char *argv[]) {
 
         } else if (argc == 2) {
         // ultimo caso: se è presente un solo parametro, deve essere per forza il login
-            printf("Sto facendo il login");
+            if( send(sockId , MSG_LOGIN , 2 , 0) < 0) {
+                printf("[!] Cannot send login request to the server!\n");
+            }
+            printf("Sent Login Request\n");
 
         // Qua ci va il login
         }

@@ -15,7 +15,13 @@
 #include "include/utils.h"
 #include "include/hash.h"
 
-void *launchThreadWorker(void *arg) {
-    printf("lleeeel");
+void *launchThreadWorker(int newConn) {
+
+    char buf[100];
+
+    if(read(newConn, buf, sizeof(buf)) < 0) {
+        printf("Received nothing\n");
+    }
+    printf("%s\n", buf);
     return NULL;
 }

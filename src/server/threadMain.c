@@ -29,10 +29,9 @@ void sighand(int sig) {
     }
 }
 
-
 void *launchThreadMain(void *arg) {
 
-    int sockId, newConn, len, retval;
+    int sockId, len, retval, newConn;
 
     struct sockaddr_in server;
     struct sockaddr_in client;
@@ -73,30 +72,33 @@ void *launchThreadMain(void *arg) {
 
     if (bind(sockId, (struct sockaddr *)&server, sizeof(server)) < 0) {
         buildLog("Cannot bind on port",1);
-    }
+    } else {
 
-    //printf("[+] Listening on port %d\n", PORT);
-    listen(sockId, SOMAXCONN);
+        listen(sockId, SOMAXCONN);
 
-    len = sizeof(struct sockaddr_in);
+        len = sizeof(struct sockaddr_in);
 
-    while (go) {
+        while (go) {
+            newConn = accept(sockId, (struct sockaddr *)&client, (socklen_t *)&len);
 
-        newConn = accept(sockId, (struct sockaddr *)&client, (socklen_t *)&len);
+            if(newConn == -1) {
+                buildLog("[!] Cannot accept new connections", 1);
+            } else {
+                printf("[+] New Client Connected\n");
 
-        if(newConn == -1) {
-            buildLog("Cannot accept new connections", 1);
-        } else {
-            if(pthread_create(&threadWorker, &attr, &launchThreadWorker, NULL)!= 0) {
-                buildLog("Failed to create threadMain", 1);
+                if(pthread_create(&threadWorker, &attr, &launchThreadWorker, &newConn)!= 0) {
+                    buildLog("Failed to create threadMain", 1);
+                }
+                sleep(1);
             }
+
         }
 
+        close(newConn);
+
     }
 
-    close(newConn);
-    //close(sockId);
-
+    close(sockId);
     return NULL;
 
 }
