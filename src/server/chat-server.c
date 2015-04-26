@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
             return -5;
         }
 
-        pthread_join(threadMain, NULL) ;
+        pthread_join(threadMain, NULL);
 
     } else if (pid < 0) {
         buildLog("[!] Cannot create child process", 1);

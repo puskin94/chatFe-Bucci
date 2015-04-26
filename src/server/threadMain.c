@@ -18,6 +18,7 @@
 
 #define PORT 7777
 
+
 bool go = true;
 int sockId;
 
@@ -32,6 +33,7 @@ void sighand(int sig) {
 void *launchThreadMain(void *arg) {
 
     int sockId, len, retval, newConn;
+
 
     struct sockaddr_in server;
     struct sockaddr_in client;
@@ -86,10 +88,10 @@ void *launchThreadMain(void *arg) {
             } else {
                 printf("[+] New Client Connected\n");
 
-                if(pthread_create(&threadWorker, &attr, &launchThreadWorker, &newConn)!= 0) {
-                    buildLog("Failed to create threadMain", 1);
+                if(pthread_create(&threadWorker, &attr, &launchThreadWorker, (void *)&newConn)!= 0) {
+                    buildLog("Failed to create threadWorker", 1);
                 }
-                sleep(1);
+
             }
 
         }
@@ -125,9 +127,9 @@ bool readUserFile() {
         hdata_t *user = (hdata_t *) malloc(sizeof(hdata_t));
 
         while (fgets (userInfo, sizeof(userInfo), fp)) {
-            userName = strtok (userInfo, ":");
-            fullName = strtok (NULL, ":");
-            mail = strtok (NULL, ":\n");
+            userName = strtok(userInfo, ":");
+            fullName = strtok(NULL, ":");
+            mail = strtok(NULL, ":\n");
 
             if (userName != NULL && fullName != NULL && mail != NULL) {
 

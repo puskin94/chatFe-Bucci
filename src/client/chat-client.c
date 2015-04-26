@@ -18,7 +18,7 @@
 
 
 #define MSG_LOGIN "L"
-#define MSG_RELOG "R"
+#define MSG_REGLOG "R"
 #define MSG_OK "O"
 #define MSG_ERROR "E"
 #define MSG_SINGLE "S"
@@ -32,6 +32,8 @@ int main(int argc, char *argv[]) {
 
     // intero che indica il numero di tentativi di connessione al server
     int count = 0, sockId;
+    char cmdToSend[100];
+    char fullName[256];
 
     client.sin_family = AF_INET;
     client.sin_port = htons(PORT);
@@ -73,19 +75,34 @@ int main(int argc, char *argv[]) {
             printHelp();
         } else if ((strcmp(argv[1], "-r") == 0) && argc == 6) {
         // se il parametro è '-r' e ci sono tutti i parametri necessari
-            printf("Mi devo registrare");
+            strcat(cmdToSend, MSG_REGLOG);
+            strcat(cmdToSend, ":");
+            strcat(cmdToSend, argv[2]); // nome
+            strcat(cmdToSend, " ");
+            strcat(cmdToSend, argv[3]); // cognome
+            strcat(cmdToSend, ":");
+            strcat(cmdToSend, argv[4]); // mail
+            strcat(cmdToSend, ":");
+            strcat(cmdToSend, argv[5]); // username
 
-        // Qua ci va la registrazione
-
+            if(send(sockId , cmdToSend , sizeof(cmdToSend) , 0) < 0) {
+                printf("[!] Cannot send registration request to the server!\n");
+            } else {
+                printf("[+] Sent Registration Request\n");
+            }
 
         } else if (argc == 2) {
         // ultimo caso: se è presente un solo parametro, deve essere per forza il login
-            if( send(sockId , MSG_LOGIN , 2 , 0) < 0) {
-                printf("[!] Cannot send login request to the server!\n");
-            }
-            printf("Sent Login Request\n");
+            strcat(cmdToSend, MSG_LOGIN);
+            strcat(cmdToSend, ":");
+            strcat(cmdToSend, argv[1]);
 
-        // Qua ci va il login
+            if(send(sockId , cmdToSend , sizeof(cmdToSend) , 0) < 0) {
+                printf("[!] Cannot send login request to the server!\n");
+            } else {
+                printf("[+] Sent Login Request\n");
+            }
+
         }
 
 

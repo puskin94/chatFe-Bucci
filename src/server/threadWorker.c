@@ -15,13 +15,60 @@
 #include "include/utils.h"
 #include "include/hash.h"
 
-void *launchThreadWorker(int newConn) {
+#define MSG_LOGIN "L"
+#define MSG_REGLOG "R"
+#define MSG_OK "O"
+#define MSG_ERROR "E"
+#define MSG_SINGLE "S"
+#define MSG_BRDCAST "B"
+#define MSG_LIST "I"
+#define MSG_LOGOUT "X"
 
-    char buf[100];
+void *launchThreadWorker(void *newConn) {
 
-    if(read(newConn, buf, sizeof(buf)) < 0) {
-        printf("Received nothing\n");
+    pthread_mutex_t mux = PTHREAD_MUTEX_INITIALIZER;
+
+    char cmdReceived[100];
+    char *action;
+
+    char *userName;
+    char *fullName;
+    char *mail;
+
+    int sock = *(int*)newConn;
+
+    // Viene ricevuto il messaggio e controllato quale servizio
+    // viene richiesto
+
+    if(read(sock, cmdReceived, sizeof(cmdReceived)) < 0) {
+
+        printf("[!] Error while reading from socket\n");
+
+    } else {
+
+        action = strtok(cmdReceived, ":");
+
+        if (strcmp(action, MSG_LOGIN) == 0) {
+                        // viene richesto il LOGIN
+            userName = strtok(NULL, " ");
+                        // ricerca di 'username' nella hashtable
+                        printf("%s\n",userName);
+
+        } else if (strcmp(action, MSG_REGLOG) == 0) {
+                        // viene richiesta la registrazione ed il login
+            fullName = strtok(NULL, ":");
+            mail = strtok(NULL, ":");
+            userName = strtok(NULL, ":");
+
+            printf("%s --> %s --> %s\n",fullName, mail, userName );
+
+        } else if (strcmp(action, MSG_LIST) == 0) {
+                        // viene richiesta la lista degli utenti online
+
+        } else if (strcmp(action, MSG_LOGOUT) == 0) {
+                        // viene richiesta la registrazione ed il login
+        }
     }
-    printf("%s\n", buf);
+
     return NULL;
 }
