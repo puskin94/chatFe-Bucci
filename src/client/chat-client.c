@@ -12,7 +12,7 @@
 
 #include "include/utils.h"
 
-#define PORT 7777
+#define PORT 7778
 #define MAXCONNTENT 10
 #define SERVERIP "127.0.0.1"
 

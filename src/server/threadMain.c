@@ -16,7 +16,7 @@
 #include "include/hash.h"
 #include "include/threadWorker.h"
 
-#define PORT 7777
+#define PORT 7778
 
 
 bool go = true;
