@@ -32,8 +32,12 @@ int main(int argc, char *argv[]) {
 
     // intero che indica il numero di tentativi di connessione al server
     int count = 0, sockId;
-    char cmdToSend[100];
-    char fullName[256];
+    int buffSize = 8;
+    int len = 000;
+
+    char *buff = malloc(sizeof(char*) * 30); // la dimensione iniziale è quella di un char
+                                        // ovvero il primo token da leggere
+    //bzero(buff, buffSize);
 
     client.sin_family = AF_INET;
     client.sin_port = htons(PORT);
@@ -70,20 +74,53 @@ int main(int argc, char *argv[]) {
             printf("Connected to the Server!\n");
         }
 
+
         // visualizzazione dell' help
         if (strcmp(argv[1], "-h") == 0) {
             printHelp();
         } else if ((strcmp(argv[1], "-r") == 0) && argc == 6) {
         // se il parametro è '-r' e ci sono tutti i parametri necessari
-            strcat(cmdToSend, MSG_REGLOG);
+
+            // la dimensione della stringa da passare è
+            // 1 (R) + 3 (len) +
+
+
+/*            strcat(buff,MSG_REGLOG);
+            buffSize += 3;
+            //buff = realloc(buff, buffSize);
+
+            strcat(buff, "000");
+
+            buffSize += 3;
+            //buff = realloc(buff, buffSize);
+
+            strcat(buff, "000");
+
+            buffSize += 3;
+            //buff = realloc(buff, buffSize);
+
+            strcat(buff, "00014");
+
+            buffSize += 14;
+            //buff = realloc(buff, buffSize);
+
+            strcat(buff, "giovanni bucci");*/
+
+            strcat(buff, "R005pippo005pluto00014giovanni bucci");
+
+
+            if(send(sockId , buff , 41 , 0) < 0) {
+                printf("[!] Cannot send registration request to the server!\n");
+            } else {
+                printf("[+] Sent Registration Request\n");
+            }
+            /*strcat(cmdToSend, argv[5]); // username
             strcat(cmdToSend, ":");
             strcat(cmdToSend, argv[2]); // nome
             strcat(cmdToSend, " ");
             strcat(cmdToSend, argv[3]); // cognome
             strcat(cmdToSend, ":");
             strcat(cmdToSend, argv[4]); // mail
-            strcat(cmdToSend, ":");
-            strcat(cmdToSend, argv[5]); // username
 
             if(send(sockId , cmdToSend , sizeof(cmdToSend) , 0) < 0) {
                 printf("[!] Cannot send registration request to the server!\n");
@@ -102,7 +139,7 @@ int main(int argc, char *argv[]) {
             } else {
                 printf("[+] Sent Login Request\n");
             }
-
+*/
         }
 
 
