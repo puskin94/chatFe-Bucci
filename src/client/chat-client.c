@@ -26,6 +26,24 @@
 #define MSG_LIST "I"
 #define MSG_LOGOUT "X"
 
+
+// questa funzione consente la creazione di una stringa contenente la lunghezza
+// in byte del campo passato come parametro
+void getLen(char *buff, int len, int threeOrFive) {
+
+    char intToChar[5];
+    int i;
+
+    sprintf(intToChar, "%d", len);
+
+    threeOrFive -= strlen(intToChar);
+    for (i = 0; i < threeOrFive; i++) {
+        strcat(buff, "0");
+    }
+    strcat(buff, intToChar);
+
+}
+
 int main(int argc, char *argv[]) {
 
     struct sockaddr_in client;
@@ -33,9 +51,13 @@ int main(int argc, char *argv[]) {
     // intero che indica il numero di tentativi di connessione al server
     int count = 0, sockId;
     int buffSize = 8;
-    int len = 000;
+    int remaining = 5;
+    int lenMsg;
+    int tmpLenMsg = 8;
+    char intToChar[5];
 
-    char *buff = malloc(sizeof(char*) * 30); // la dimensione iniziale è quella di un char
+    char *tmpMsg = malloc(sizeof(char*));
+    char *buff = malloc(sizeof(char*)); // la dimensione iniziale è quella di un char
                                         // ovvero il primo token da leggere
     //bzero(buff, buffSize);
 
@@ -81,48 +103,53 @@ int main(int argc, char *argv[]) {
         } else if ((strcmp(argv[1], "-r") == 0) && argc == 6) {
         // se il parametro è '-r' e ci sono tutti i parametri necessari
 
-            // la dimensione della stringa da passare è
-            // 1 (R) + 3 (len) +
+            strcat(buff,MSG_REGLOG);
+
+            buffSize += 6;
+            buff = realloc(buff, buffSize);
+            strcat(buff, "000000"); // non ci sono ne sender ne receiver
+            buffSize += 5;
+            buff = realloc(buff, buffSize);
+
+            // costruzione del messaggio da inviare
+
+            tmpLenMsg += strlen(argv[5]);
+            tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            strcat(tmpMsg, argv[5]); // username
+
+            tmpLenMsg += strlen(":");
+            tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            strcat(tmpMsg, ":");
+
+            tmpLenMsg += strlen(argv[2]);
+            tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            strcat(tmpMsg, argv[2]); // nome
+
+            tmpLenMsg += strlen(" ");
+            tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            strcat(tmpMsg, " ");
+
+            tmpLenMsg += strlen(argv[3]);
+            tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            strcat(tmpMsg, argv[3]); // cognome
+
+            tmpLenMsg += strlen(":");
+            tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            strcat(tmpMsg, ":");
+
+            tmpLenMsg += strlen(argv[4]);
+            tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            strcat(tmpMsg, argv[4]); // mail
+
+            lenMsg = strlen(tmpMsg);
+            getLen(buff, lenMsg, 5); // calcolo la lunghezza del messaggio successivo
+
+            buffSize += lenMsg;
+            buff = realloc(buff, buffSize);
+            strcat(buff, tmpMsg);
 
 
-/*            strcat(buff,MSG_REGLOG);
-            buffSize += 3;
-            //buff = realloc(buff, buffSize);
-
-            strcat(buff, "000");
-
-            buffSize += 3;
-            //buff = realloc(buff, buffSize);
-
-            strcat(buff, "000");
-
-            buffSize += 3;
-            //buff = realloc(buff, buffSize);
-
-            strcat(buff, "00014");
-
-            buffSize += 14;
-            //buff = realloc(buff, buffSize);
-
-            strcat(buff, "giovanni bucci");*/
-
-            strcat(buff, "R005pippo005pluto00014giovanni bucci");
-
-
-            if(send(sockId , buff , 41 , 0) < 0) {
-                printf("[!] Cannot send registration request to the server!\n");
-            } else {
-                printf("[+] Sent Registration Request\n");
-            }
-            /*strcat(cmdToSend, argv[5]); // username
-            strcat(cmdToSend, ":");
-            strcat(cmdToSend, argv[2]); // nome
-            strcat(cmdToSend, " ");
-            strcat(cmdToSend, argv[3]); // cognome
-            strcat(cmdToSend, ":");
-            strcat(cmdToSend, argv[4]); // mail
-
-            if(send(sockId , cmdToSend , sizeof(cmdToSend) , 0) < 0) {
+            if(send(sockId , buff , buffSize , 0) < 0) {
                 printf("[!] Cannot send registration request to the server!\n");
             } else {
                 printf("[+] Sent Registration Request\n");
@@ -130,16 +157,27 @@ int main(int argc, char *argv[]) {
 
         } else if (argc == 2) {
         // ultimo caso: se è presente un solo parametro, deve essere per forza il login
-            strcat(cmdToSend, MSG_LOGIN);
-            strcat(cmdToSend, ":");
-            strcat(cmdToSend, argv[1]);
+            strcat(buff, MSG_LOGIN);
 
-            if(send(sockId , cmdToSend , sizeof(cmdToSend) , 0) < 0) {
+            buffSize += 6;
+            buff = realloc(buff, buffSize);
+            strcat(buff, "000000"); // non ci sono ne sender ne receiver
+            buffSize += 5;
+            buff = realloc(buff, buffSize);
+
+            lenMsg = strlen(argv[1]);
+            getLen(buff, lenMsg, 5); // calcolo la lunghezza del messaggio successivo
+
+            buffSize += lenMsg;
+            buff = realloc(buff, buffSize);
+            strcat(buff, argv[1]);
+
+
+            if(send(sockId , buff , buffSize , 0) < 0) {
                 printf("[!] Cannot send login request to the server!\n");
             } else {
                 printf("[+] Sent Login Request\n");
             }
-*/
         }
 
 
