@@ -108,44 +108,35 @@ int main(int argc, char *argv[]) {
             buffSize += 6;
             buff = realloc(buff, buffSize);
             strcat(buff, "000000"); // non ci sono ne sender ne receiver
-            buffSize += 5;
-            buff = realloc(buff, buffSize);
+            buffSize += 5; buff = realloc(buff, buffSize);
 
             // costruzione del messaggio da inviare
 
-            tmpLenMsg += strlen(argv[5]);
-            tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            tmpLenMsg += strlen(argv[5]); tmpMsg = realloc(tmpMsg, tmpLenMsg);
             strcat(tmpMsg, argv[5]); // username
 
-            tmpLenMsg += strlen(":");
-            tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            tmpLenMsg += strlen(":"); tmpMsg = realloc(tmpMsg, tmpLenMsg);
             strcat(tmpMsg, ":");
 
-            tmpLenMsg += strlen(argv[2]);
-            tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            tmpLenMsg += strlen(argv[2]); tmpMsg = realloc(tmpMsg, tmpLenMsg);
             strcat(tmpMsg, argv[2]); // nome
 
-            tmpLenMsg += strlen(" ");
-            tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            tmpLenMsg += strlen(" "); tmpMsg = realloc(tmpMsg, tmpLenMsg);
             strcat(tmpMsg, " ");
 
-            tmpLenMsg += strlen(argv[3]);
-            tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            tmpLenMsg += strlen(argv[3]); tmpMsg = realloc(tmpMsg, tmpLenMsg);
             strcat(tmpMsg, argv[3]); // cognome
 
-            tmpLenMsg += strlen(":");
-            tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            tmpLenMsg += strlen(":"); tmpMsg = realloc(tmpMsg, tmpLenMsg);
             strcat(tmpMsg, ":");
 
-            tmpLenMsg += strlen(argv[4]);
-            tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            tmpLenMsg += strlen(argv[4]); tmpMsg = realloc(tmpMsg, tmpLenMsg);
             strcat(tmpMsg, argv[4]); // mail
 
             lenMsg = strlen(tmpMsg);
             getLen(buff, lenMsg, 5); // calcolo la lunghezza del messaggio successivo
 
-            buffSize += lenMsg;
-            buff = realloc(buff, buffSize);
+            buffSize += lenMsg; buff = realloc(buff, buffSize);
             strcat(buff, tmpMsg);
 
 
@@ -162,14 +153,12 @@ int main(int argc, char *argv[]) {
             buffSize += 6;
             buff = realloc(buff, buffSize);
             strcat(buff, "000000"); // non ci sono ne sender ne receiver
-            buffSize += 5;
-            buff = realloc(buff, buffSize);
+            buffSize += 5; buff = realloc(buff, buffSize);
 
             lenMsg = strlen(argv[1]);
             getLen(buff, lenMsg, 5); // calcolo la lunghezza del messaggio successivo
 
-            buffSize += lenMsg;
-            buff = realloc(buff, buffSize);
+            buffSize += lenMsg; buff = realloc(buff, buffSize);
             strcat(buff, argv[1]);
 
 
@@ -179,6 +168,9 @@ int main(int argc, char *argv[]) {
                 printf("[+] Sent Login Request\n");
             }
         }
+
+        // qualunque sia il comando inviato, devo aspettare un messaggio
+        // di risposta ( MSG_OK || MSG_ERROR ) dal server
 
 
     }
