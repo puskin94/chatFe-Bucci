@@ -56,10 +56,15 @@ int main(int argc, char *argv[]) {
     int tmpLenMsg = 8;
     char intToChar[5];
 
-    char *tmpMsg = malloc(sizeof(char*));
-    char *buff = malloc(sizeof(char*)); // la dimensione iniziale è quella di un char
+    char name[128];
+    char surname[128];
+    char mail[256];
+
+    char *tmpMsg = malloc(sizeof(char));
+    char *buff = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
                                         // ovvero il primo token da leggere
-    //bzero(buff, buffSize);
+
+    //char *buffRisp = malloc(sizeof(char));
 
     client.sin_family = AF_INET;
     client.sin_port = htons(PORT);
@@ -77,7 +82,7 @@ int main(int argc, char *argv[]) {
     // Queste sono le varie casistiche ammesse
 
     if ( (strcmp(argv[1], "-h") == 0) ||
-        ((strcmp(argv[1], "-r") == 0) && argc == 6) ||
+        ((strcmp(argv[1], "-r") == 0) && argc == 4) ||
         (argc == 2) ) {
 
         // Il client prova a connettersi al server remoto per un massimo di
@@ -100,8 +105,11 @@ int main(int argc, char *argv[]) {
         // visualizzazione dell' help
         if (strcmp(argv[1], "-h") == 0) {
             printHelp();
-        } else if ((strcmp(argv[1], "-r") == 0) && argc == 6) {
-        // se il parametro è '-r' e ci sono tutti i parametri necessari
+        } else if ((strcmp(argv[1], "-r") == 0) && argc == 4) {
+            // se il parametro è '-r' e ci sono tutti i parametri necessari
+
+            // ./chat-client -r "Giovanni Bucci giovanni01.bucci@student.unife.it" puskin
+
 
             strcat(buff,MSG_REGLOG);
 
@@ -112,32 +120,48 @@ int main(int argc, char *argv[]) {
 
             // costruzione del messaggio da inviare
 
-            tmpLenMsg += strlen(argv[5]); tmpMsg = realloc(tmpMsg, tmpLenMsg);
-            strcat(tmpMsg, argv[5]); // username
-
-            tmpLenMsg += strlen(":"); tmpMsg = realloc(tmpMsg, tmpLenMsg);
-            strcat(tmpMsg, ":");
-
-            tmpLenMsg += strlen(argv[2]); tmpMsg = realloc(tmpMsg, tmpLenMsg);
-            strcat(tmpMsg, argv[2]); // nome
-
-            tmpLenMsg += strlen(" "); tmpMsg = realloc(tmpMsg, tmpLenMsg);
-            strcat(tmpMsg, " ");
-
             tmpLenMsg += strlen(argv[3]); tmpMsg = realloc(tmpMsg, tmpLenMsg);
-            strcat(tmpMsg, argv[3]); // cognome
+            strcat(tmpMsg, argv[3]); // username
 
             tmpLenMsg += strlen(":"); tmpMsg = realloc(tmpMsg, tmpLenMsg);
             strcat(tmpMsg, ":");
 
-            tmpLenMsg += strlen(argv[4]); tmpMsg = realloc(tmpMsg, tmpLenMsg);
-            strcat(tmpMsg, argv[4]); // mail
+
+
+            if (sscanf(argv[2], "%s %s %s", name, surname, mail ) == 3) {
+
+
+                tmpLenMsg += strlen(name);
+                tmpMsg = realloc(tmpMsg, tmpLenMsg);
+                strcat(tmpMsg, name); // nome
+
+
+                tmpLenMsg += strlen(" "); tmpMsg = realloc(tmpMsg, tmpLenMsg);
+                strcat(tmpMsg, " ");
+
+
+                tmpLenMsg += strlen(surname); tmpMsg = realloc(tmpMsg, tmpLenMsg);
+                strcat(tmpMsg, surname); // cognome
+
+                tmpLenMsg += strlen(":"); tmpMsg = realloc(tmpMsg, tmpLenMsg);
+                strcat(tmpMsg, ":");
+
+
+                tmpLenMsg += strlen(mail); tmpMsg = realloc(tmpMsg, tmpLenMsg);
+                strcat(tmpMsg, mail); // mail
+
+            }
+
+
+
+
 
             lenMsg = strlen(tmpMsg);
             getLen(buff, lenMsg, 5); // calcolo la lunghezza del messaggio successivo
 
             buffSize += lenMsg; buff = realloc(buff, buffSize);
             strcat(buff, tmpMsg);
+
 
 
             if(send(sockId , buff , buffSize , 0) < 0) {
@@ -147,7 +171,7 @@ int main(int argc, char *argv[]) {
             }
 
         } else if (argc == 2) {
-        // ultimo caso: se è presente un solo parametro, deve essere per forza il login
+            // ultimo caso: se è presente un solo parametro, deve essere per forza il login
             strcat(buff, MSG_LOGIN);
 
             buffSize += 6;
@@ -171,6 +195,17 @@ int main(int argc, char *argv[]) {
 
         // qualunque sia il comando inviato, devo aspettare un messaggio
         // di risposta ( MSG_OK || MSG_ERROR ) dal server
+
+/*        if(read(sockId, buffRisp, 3 < 0)) {
+            printf("non ricevo nulla\n");
+        } else {
+            if (strcmp(buffRisp, "OK") == 0) {
+                printf("molto bene\n");
+            } else {
+                printf("molto male\n");
+            }
+            printf("%s\n", buffRisp);
+        }*/
 
 
     }

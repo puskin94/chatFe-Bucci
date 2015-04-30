@@ -23,10 +23,9 @@ bool go = true;
 int sockId;
 
 void sighand(int sig) {
-    if ( sig == SIGINT || sig == SIGTERM) {
+    if ( sig == SIGINT || sig == SIGTERM ) {
         buildLog("CTRL-C Received. Quitting", 1);
         go = false;
-        close(sockId);
     }
 }
 
@@ -47,6 +46,8 @@ void *launchThreadMain(void *arg) {
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
     signal(SIGINT, sighand);
+    signal(SIGTERM, sighand);
+
 
     // read user-file
     if (readUserFile()) {
@@ -86,7 +87,7 @@ void *launchThreadMain(void *arg) {
             if(newConn == -1) {
                 buildLog("[!] Cannot accept new connections", 1);
             } else {
-                printf("[+] New Client Connected\n");
+                printf("\n[+] New Client Connected\n");
 
                 if(pthread_create(&threadWorker, &attr, &launchThreadWorker, (void *)&newConn)!= 0) {
                     buildLog("Failed to create threadWorker", 1);

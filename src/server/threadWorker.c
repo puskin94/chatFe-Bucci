@@ -22,7 +22,7 @@
 #define MSG_SINGLE 'S'
 #define MSG_BRDCAST 'B'
 #define MSG_LIST 'I'
-#define MSG_LOGOUT 'X'
+#define MSG_LOGOUT "X"
 
 typedef struct {
     char type;
@@ -44,6 +44,8 @@ void *launchThreadWorker(void *newConn) {
     int lenToAllocate;
     int sock = *(int*)newConn;
 
+    bool go = true;
+
     msg_t *msg_T = malloc(sizeof(struct msg_t*));
 
     // 'pulisco' il buffer
@@ -59,55 +61,69 @@ void *launchThreadWorker(void *newConn) {
 
     } else {
 
-        /* nelle successive linee viene riempita la struttura 'msg_T'.
-        ogni campo viene letto dal socket attraverso una read.
-        il dato viene inserito in 'char *buff';
-        la grandezza di buff viene allocata dinamicamente attraverso
-        la funzione 'realloc()'.
-        se necessario ( per i campi char * ), la grandezza dei componenti
-        della struttura viene allocata dinamicamente attraverso
-        la funzione 'malloc()' */
+        while (go) {
 
-        msg_T->type = buff[0];
+            /* nelle successive linee viene riempita la struttura 'msg_T'.
+            ogni campo viene letto dal socket attraverso una read.
+            il dato viene inserito in 'char *buff';
+            la grandezza di buff viene allocata dinamicamente attraverso
+            la funzione 'realloc()'.
+            se necessario ( per i campi char * ), la grandezza dei componenti
+            della struttura viene allocata dinamicamente attraverso
+            la funzione 'malloc()' */
 
-        buff = realloc(buff, 3); // adesso può contenere 3 decimali
-        read(sock, buff, 3); // leggo da sock la lunghezza del prossimo campo
-        len = atoi(buff); // la rendo 'leggibile' ( da char a int )
+            msg_T->type = buff[0];
 
-        lenToAllocate = sizeof(char) * len;
-        buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
-        read(sock, buff, lenToAllocate); // leggo il campo successivo
-        msg_T->sender = malloc(lenToAllocate);
-        msg_T->sender = buff;
+            buff = realloc(buff, 3); // adesso può contenere 3 decimali
+            read(sock, buff, 3); // leggo da sock la lunghezza del prossimo campo
+            len = atoi(buff); // la rendo 'leggibile' ( da char a int )
 
-
-        // qua leggo len e receiver
-        buff = realloc(buff, 3); // adesso può contenere 3 decimali
-        read(sock, buff, 3); // leggo da sock la lunghezza del prossimo campo
-        len = atoi(buff); // la rendo 'leggibile' ( da char a int )
-
-        lenToAllocate = sizeof(char) * len;
-        buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
-        read(sock, buff, lenToAllocate); // leggo il campo successivo
-        msg_T->receiver = malloc(lenToAllocate);
-        msg_T->receiver = buff;
+            lenToAllocate = sizeof(char) * len;
+            buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
+            read(sock, buff, lenToAllocate); // leggo il campo successivo
+            msg_T->sender = malloc(lenToAllocate);
+            msg_T->sender = buff;
 
 
-        // qua leggo len e msg
-        // len lo facciamo un po più grande: 5 digit
-        buff = realloc(buff, 5); // adesso può contenere 5 decimali
-        read(sock, buff, 5); // leggo da sock la lunghezza del prossimo campo
-        len = atoi(buff); // la rendo 'leggibile' ( da char a int )
-        msg_T->msglen = len;
+            // qua leggo len e receiver
+            buff = realloc(buff, 3); // adesso può contenere 3 decimali
+            read(sock, buff, 3); // leggo da sock la lunghezza del prossimo campo
+            len = atoi(buff); // la rendo 'leggibile' ( da char a int )
+
+            lenToAllocate = sizeof(char) * len;
+            buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
+            read(sock, buff, lenToAllocate); // leggo il campo successivo
+            msg_T->receiver = malloc(lenToAllocate);
+            msg_T->receiver = buff;
 
 
-        lenToAllocate = sizeof(char) * len;
-        buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
-        read(sock, buff, lenToAllocate); // leggo il campo successivo
-        msg_T->msg = malloc(lenToAllocate);
-        msg_T->msg = buff;
+            // qua leggo len e msg
+            // len lo facciamo un po più grande: 5 digit
+            buff = realloc(buff, 5); // adesso può contenere 5 decimali
+            read(sock, buff, 5); // leggo da sock la lunghezza del prossimo campo
+            len = atoi(buff); // la rendo 'leggibile' ( da char a int )
+            msg_T->msglen = len;
 
-        // differenziazione delle operazioni da eseguire
+
+            lenToAllocate = sizeof(char) * len;
+            buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
+            read(sock, buff, lenToAllocate); // leggo il campo successivo
+            msg_T->msg = malloc(lenToAllocate);
+            msg_T->msg = buff;
+
+
+            // differenziazione delle operazioni da eseguire
+
+
+
+
+/*            if(send(sock , "OK" , 3 , 0) < 0) {
+                printf("[!] Cannot send registration request to the server!\n");
+            } else {
+                printf("[+] Sent Registration Request\n");
+            }
+*/
+        }
 
 
     }
