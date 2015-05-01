@@ -32,13 +32,16 @@ typedef struct {
     char *msg;
 } msg_t;
 
-void registerNewUser(char *msg);
-void loginUser(char *user);
+static hash_t HASH_TABLE;
+
+void registerNewUser(char *msg, hdata_t *user);
+int loginUser(char *user, hdata_t *bs, int sock);
 
 
 void *launchThreadWorker(void *newConn) {
 
     pthread_mutex_t mux = PTHREAD_MUTEX_INITIALIZER;
+
 
     char *buff = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
                                         // ovvero il primo token da leggere
@@ -51,17 +54,25 @@ void *launchThreadWorker(void *newConn) {
 
     int lenToAllocate;
     int sock = *(int*)newConn;
+    int retVal;
 
     bool go = true;
 
     char logMsg[256];
 
+
     msg_t *msg_T = malloc(sizeof(struct msg_t*));
+
+    hdata_t *user = (hdata_t *) malloc(sizeof(hdata_t));
+    hdata_t *bs = (hdata_t *) malloc(sizeof(hdata_t));
 
     // 'pulisco' il buffer
     // 'pulisco' l'array dei log
     bzero(buff, sizeof(char));
     bzero(logMsg, 256);
+
+
+    HASH_TABLE = CREAHASH();
 
     // Viene ricevuto il messaggio e controllato quale servizio
     // viene richiesto
@@ -175,10 +186,15 @@ void *launchThreadWorker(void *newConn) {
 
                 // prima inserisco il nuovo utente nella hash table
                 // buff contiene ancora il messaggio ricevuto dal client
-                registerNewUser(buff);
+                registerNewUser(buff, user);
                 // e poi gli faccio eseguire il login
                 userName = strtok(tmpBuff, ":");
-                loginUser(userName);
+                retVal = loginUser(userName, bs, sock);
+                if (retVal < 0) {
+                    printf("devo ritornare errore\n");
+                } else {
+                    printf("tutto bene\n");
+                }
 
             }
 
@@ -200,17 +216,12 @@ void *launchThreadWorker(void *newConn) {
     pthread_exit(NULL);
 }
 
-void registerNewUser(char *msg) {
-
-    static hash_t HASH_TABLE;
+void registerNewUser(char *msg, hdata_t *user) {
 
     // variabili necessarie all'inserimento dei dati nella hash table
     char *userName;
     char *fullName;
     char *mail;
-
-    HASH_TABLE = CREAHASH();
-    hdata_t *user = (hdata_t *) malloc(sizeof(hdata_t));
 
     userName = strtok(msg, ":");
     fullName = strtok(NULL, ":");
@@ -227,20 +238,14 @@ void registerNewUser(char *msg) {
 
 }
 
-void loginUser(char *user) {
+int loginUser(char *user, hdata_t *bs, int sock) {
 
-    static hash_t HASH_TABLE;
-    hdata_t * bs;
-    HASH_TABLE = CREAHASH();
     bs = CERCAHASH(user, HASH_TABLE);
+    if ( bs == NULL ) {
+        buildLog("Username not Found", 0);
+        return -1;
+    }
+    bs->sockid = sock;
 
-    printf("leeeeeeeeeeeel\n");
-
-    if ( bs != NULL ) {
-    printf("uname: %s, full name: %s, email: %s  sockid: %d\n",
-      bs->uname, bs->fullname, bs->email, bs->sockid );
-  } else {
-    fprintf(stderr, "ERROR: key: %s not found\n", user);
-  }
+    return 0;
 }
-

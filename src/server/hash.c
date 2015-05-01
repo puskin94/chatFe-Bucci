@@ -16,8 +16,8 @@ int hashfunc(char * k) {
   int hashval = 0;
   for ( i=0; i < strlen(k); i++ ) {
     hashval = ((hashval*SL) + k[i]) % HL;
-  }
-  return hashval;
+}
+return hashval;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -36,10 +36,10 @@ hdata_t * CERCALISTA ( char * key, lista L ) {
     k = ((hdata_t *)(p->elemento))->uname;
     if ( strcmp (k, key ) == 0 ) {
       r = p->elemento;
-    }
-    p = SUCCLISTA(p);
   }
-  return r;
+  p = SUCCLISTA(p);
+}
+return r;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -50,8 +50,8 @@ hash_t CREAHASH () {
   H = (hash_t) malloc(HL*sizeof(lista));
   for ( i=0; i < HL; i++ ) {
     H[i] = CREALISTA();
-  }
-  return H;
+}
+return H;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -74,7 +74,7 @@ void INSERISCIHASH (char * key, hdata_t * elem, hash_t H) {
   if ( CERCAHASH(key, H) == NULL ) {
     p = PRIMOLISTA(H[i]);
     INSLISTA((void *)elem, &p);
-  }
+}
 }
 
 //////////////////////////////////////////////////////////////////////
