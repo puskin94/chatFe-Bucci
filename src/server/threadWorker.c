@@ -16,13 +16,13 @@
 #include "include/hash.h"
 
 #define MSG_LOGIN 'L'
-#define MSG_REGLOG "R"
+#define MSG_REGLOG 'R'
 #define MSG_OK 'O'
 #define MSG_ERROR 'E'
 #define MSG_SINGLE 'S'
 #define MSG_BRDCAST 'B'
 #define MSG_LIST 'I'
-#define MSG_LOGOUT "X"
+#define MSG_LOGOUT 'X'
 
 typedef struct {
     char type;
@@ -40,7 +40,6 @@ void *launchThreadWorker(void *newConn) {
     char *buff = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
                                         // ovvero il primo token da leggere
 
-    int len;
     int lenToAllocate;
     int sock = *(int*)newConn;
 
@@ -72,49 +71,75 @@ void *launchThreadWorker(void *newConn) {
             della struttura viene allocata dinamicamente attraverso
             la funzione 'malloc()' */
 
+
             msg_T->type = buff[0];
+
+            // i comandi passati dal client di tipo
+            // MSG_LOGIN, MSG_REGLOG, MSG_LOGOUT, MSG_LIST, MSG_BRDCAST
+            // non hanno i campi sender & receiver.
+
+            // il comando MSG_SINGLE ha solo il campo receiver.
+
+            // in poche parole ( da lato del server ), il campo sender messo nella
+            // struttura è SEMPRE vuoto
+
+
+            // i 3 decimali devo leggerli lo stesso per consumare il socket
 
             buff = realloc(buff, 3); // adesso può contenere 3 decimali
             read(sock, buff, 3); // leggo da sock la lunghezza del prossimo campo
-            len = atoi(buff); // la rendo 'leggibile' ( da char a int )
+            msg_T->sender = malloc(sizeof(" ") + 1);
+            msg_T->sender = strdup(" ");
+            msg_T->sender[2] = '\0';
 
-            lenToAllocate = sizeof(char) * len;
-            buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
-            read(sock, buff, lenToAllocate); // leggo il campo successivo
-            msg_T->sender = malloc(lenToAllocate);
-            msg_T->sender = buff;
 
 
             // qua leggo len e receiver
             buff = realloc(buff, 3); // adesso può contenere 3 decimali
             read(sock, buff, 3); // leggo da sock la lunghezza del prossimo campo
-            len = atoi(buff); // la rendo 'leggibile' ( da char a int )
 
-            lenToAllocate = sizeof(char) * len;
-            buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
-            read(sock, buff, lenToAllocate); // leggo il campo successivo
-            msg_T->receiver = malloc(lenToAllocate);
-            msg_T->receiver = buff;
+            // se il messaggio è di tipo MSG_SINGLE
+            // il campo 'receiver' è pieno, quindi devo leggerlo dal socket
+
+            if (msg_T->type == MSG_SINGLE) {
+                lenToAllocate = sizeof(char) * atoi(buff);
+                buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
+                read(sock, buff, lenToAllocate); // leggo il campo successivo
+                msg_T->receiver = malloc(lenToAllocate + 1);
+                msg_T->receiver = strdup(buff);
+                msg_T->receiver[lenToAllocate] = '\0';
+            } else {
+                // altrimenti se appartiene alle altre casistiche,
+                // il campo 'receiver' nella struttura deve essere vuoto
+                msg_T->receiver = malloc(sizeof(" ") + 1);
+                msg_T->receiver = strdup(" ");
+                msg_T->receiver[2] = '\0';
+            }
 
 
             // qua leggo len e msg
             // len lo facciamo un po più grande: 5 digit
             buff = realloc(buff, 5); // adesso può contenere 5 decimali
             read(sock, buff, 5); // leggo da sock la lunghezza del prossimo campo
-            len = atoi(buff); // la rendo 'leggibile' ( da char a int )
-            msg_T->msglen = len;
+            msg_T->msglen = atoi(buff);
 
 
-            lenToAllocate = sizeof(char) * len;
+            lenToAllocate = sizeof(char) * atoi(buff);
             buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
             read(sock, buff, lenToAllocate); // leggo il campo successivo
-            msg_T->msg = malloc(lenToAllocate);
-            msg_T->msg = buff;
+            msg_T->msg = malloc(lenToAllocate + 1);
+            msg_T->msg = strdup(buff);
+            msg_T->msg[lenToAllocate] = '\0';
+
+
+            printf("type: %c\n", msg_T->type);
+            printf("sender: %s\n", msg_T->sender);
+            printf("receiver: %s\n", msg_T->receiver);
+            printf("msglen: %d\n", msg_T->msglen);
+            printf("mesg: %s\n", msg_T->msg);
 
 
             // differenziazione delle operazioni da eseguire
-
-
 
 
 /*            if(send(sock , "OK" , 3 , 0) < 0) {
