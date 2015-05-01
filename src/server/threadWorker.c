@@ -32,23 +32,36 @@ typedef struct {
     char *msg;
 } msg_t;
 
+void registerNewUser(char *msg);
+void loginUser(char *user);
+
 
 void *launchThreadWorker(void *newConn) {
 
-    //pthread_mutex_t mux = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mux = PTHREAD_MUTEX_INITIALIZER;
 
     char *buff = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
                                         // ovvero il primo token da leggere
+
+    char *tmpBuff;
+
+    // questa variabile verrà riempita dopo la registrazione con
+    // il nome dell'utente che dovrà effettuare il login
+    char *userName;
 
     int lenToAllocate;
     int sock = *(int*)newConn;
 
     bool go = true;
 
+    char logMsg[256];
+
     msg_t *msg_T = malloc(sizeof(struct msg_t*));
 
     // 'pulisco' il buffer
+    // 'pulisco' l'array dei log
     bzero(buff, sizeof(char));
+    bzero(logMsg, 256);
 
     // Viene ricevuto il messaggio e controllato quale servizio
     // viene richiesto
@@ -130,7 +143,13 @@ void *launchThreadWorker(void *newConn) {
                 read(sock, buff, lenToAllocate); // leggo il campo successivo
                 msg_T->msg = malloc(lenToAllocate);
                 msg_T->msg = strdup(buff);
+
+                // questo servirà dopo per il login
+                // strtok divide la stringa, quindi ho bisogno di una copia
+                tmpBuff = malloc(lenToAllocate);
+                tmpBuff = strdup(buff);
             }
+
 
 
             printf("type: %c\n", msg_T->type);
@@ -138,6 +157,30 @@ void *launchThreadWorker(void *newConn) {
             printf("receiver: %s\n", msg_T->receiver);
             printf("msglen: %d\n", msg_T->msglen);
             printf("mesg: %s\n", msg_T->msg);
+
+
+            // TODO //
+            // In ogni caso il thread worker deve scrivere sul log file
+            // il comando che dovrà eseguire
+            /*strcat(logMsg, msg_T->type);
+            strcat(logMsg, ":");
+            strcat(logMsg, msg_T->msg);
+            buildLog(logMsg, 0);*/
+
+
+            // se questo thread riceve il comando di registrazione o listing
+            // lo esegue
+
+            if (msg_T->type == MSG_REGLOG) {
+
+                // prima inserisco il nuovo utente nella hash table
+                // buff contiene ancora il messaggio ricevuto dal client
+                registerNewUser(buff);
+                // e poi gli faccio eseguire il login
+                userName = strtok(tmpBuff, ":");
+                loginUser(userName);
+
+            }
 
 
             // differenziazione delle operazioni da eseguire
@@ -156,3 +199,48 @@ void *launchThreadWorker(void *newConn) {
     free(buff);
     pthread_exit(NULL);
 }
+
+void registerNewUser(char *msg) {
+
+    static hash_t HASH_TABLE;
+
+    // variabili necessarie all'inserimento dei dati nella hash table
+    char *userName;
+    char *fullName;
+    char *mail;
+
+    HASH_TABLE = CREAHASH();
+    hdata_t *user = (hdata_t *) malloc(sizeof(hdata_t));
+
+    userName = strtok(msg, ":");
+    fullName = strtok(NULL, ":");
+    mail = strtok(NULL, ":");
+
+    user->uname = userName;
+    user->fullname = fullName;
+    user->email = mail;
+    user->sockid = -1;
+
+    INSERISCIHASH(user->uname, (void*) user, HASH_TABLE);
+
+    printf("dalla registrazione:%s\n",user->uname );
+
+}
+
+void loginUser(char *user) {
+
+    static hash_t HASH_TABLE;
+    hdata_t * bs;
+    HASH_TABLE = CREAHASH();
+    bs = CERCAHASH(user, HASH_TABLE);
+
+    printf("leeeeeeeeeeeel\n");
+
+    if ( bs != NULL ) {
+    printf("uname: %s, full name: %s, email: %s  sockid: %d\n",
+      bs->uname, bs->fullname, bs->email, bs->sockid );
+  } else {
+    fprintf(stderr, "ERROR: key: %s not found\n", user);
+  }
+}
+

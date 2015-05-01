@@ -18,16 +18,13 @@
 
 #define PORT 7778
 
+bool readUserFile();
+void sighand(int sig);
+
 
 bool go = true;
 int sockId;
 
-void sighand(int sig) {
-    if ( sig == SIGINT || sig == SIGTERM ) {
-        buildLog("CTRL-C Received. Quitting", 1);
-        go = false;
-    }
-}
 
 void *launchThreadMain(void *arg) {
 
@@ -150,4 +147,11 @@ bool readUserFile() {
     fclose(fp);
     return true;
 
+}
+
+void sighand(int sig) {
+    if ( sig == SIGINT || sig == SIGTERM ) {
+        buildLog("CTRL-C Received. Quitting", 1);
+        go = false;
+    }
 }

@@ -29,20 +29,8 @@
 
 // questa funzione consente la creazione di una stringa contenente la lunghezza
 // in byte del campo passato come parametro
-void getLen(char *buff, int len, int threeOrFive) {
+void getLen(char *buff, int len, int threeOrFive);
 
-    char intToChar[5];
-    int i;
-
-    sprintf(intToChar, "%d", len);
-
-    threeOrFive -= strlen(intToChar);
-    for (i = 0; i < threeOrFive; i++) {
-        strcat(buff, "0");
-    }
-    strcat(buff, intToChar);
-
-}
 
 int main(int argc, char *argv[]) {
 
@@ -212,4 +200,19 @@ int main(int argc, char *argv[]) {
 
 
     return 0;
+}
+
+void getLen(char *buff, int len, int threeOrFive) {
+
+    char intToChar[5];
+    int i;
+
+    sprintf(intToChar, "%d", len);
+
+    threeOrFive -= strlen(intToChar);
+    for (i = 0; i < threeOrFive; i++) {
+        strcat(buff, "0");
+    }
+    strcat(buff, intToChar);
+
 }
