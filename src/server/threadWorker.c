@@ -88,11 +88,8 @@ void *launchThreadWorker(void *newConn) {
 
             buff = realloc(buff, 3); // adesso può contenere 3 decimali
             read(sock, buff, 3); // leggo da sock la lunghezza del prossimo campo
-            msg_T->sender = malloc(sizeof(" ") + 1);
-            msg_T->sender = strdup(" ");
-            msg_T->sender[2] = '\0';
-
-
+            msg_T->sender = malloc(sizeof(""));
+            msg_T->sender = strdup("");
 
             // qua leggo len e receiver
             buff = realloc(buff, 3); // adesso può contenere 3 decimali
@@ -105,15 +102,13 @@ void *launchThreadWorker(void *newConn) {
                 lenToAllocate = sizeof(char) * atoi(buff);
                 buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
                 read(sock, buff, lenToAllocate); // leggo il campo successivo
-                msg_T->receiver = malloc(lenToAllocate + 1);
+                msg_T->receiver = malloc(lenToAllocate);
                 msg_T->receiver = strdup(buff);
-                msg_T->receiver[lenToAllocate] = '\0';
             } else {
                 // altrimenti se appartiene alle altre casistiche,
                 // il campo 'receiver' nella struttura deve essere vuoto
-                msg_T->receiver = malloc(sizeof(" ") + 1);
-                msg_T->receiver = strdup(" ");
-                msg_T->receiver[2] = '\0';
+                msg_T->receiver = malloc(sizeof(""));
+                msg_T->receiver = strdup("");
             }
 
 
@@ -127,16 +122,14 @@ void *launchThreadWorker(void *newConn) {
             // essendo il campo msg vuoto, non devo leggerlo.
             // nella struttura sarà riempito con " "
             if (msg_T->type == MSG_LOGOUT || msg_T->type == MSG_LIST) {
-                msg_T->msg = malloc(sizeof(" ") + 1);
-                msg_T->msg = strdup(" ");
-                msg_T->msg[2] = '\0';
+                msg_T->msg = malloc(sizeof(""));
+                msg_T->msg = strdup("");
             } else {
                 lenToAllocate = sizeof(char) * atoi(buff);
                 buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
                 read(sock, buff, lenToAllocate); // leggo il campo successivo
-                msg_T->msg = malloc(lenToAllocate + 1);
+                msg_T->msg = malloc(lenToAllocate);
                 msg_T->msg = strdup(buff);
-                msg_T->msg[lenToAllocate] = '\0';
             }
 
 
