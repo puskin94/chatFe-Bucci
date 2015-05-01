@@ -71,18 +71,18 @@ void *launchThreadWorker(void *newConn) {
             della struttura viene allocata dinamicamente attraverso
             la funzione 'malloc()' */
 
+            // -------> REGOLE DIPENDENTI DALLA CONSEGNA <------- //
+
+            /* i comandi passati dal client di tipo
+            MSG_LOGIN, MSG_REGLOG, MSG_LOGOUT, MSG_LIST, MSG_BRDCAST
+            non hanno i campi sender & receiver.
+            il comando MSG_SINGLE ha solo il campo receiver.
+            in poche parole ( da lato del server ), il campo sender messo nella
+            struttura è SEMPRE vuoto
+            per i messaggi di tipo MSG_LOGOUT & MSG_LIST il campo msg è vuoto */
+
 
             msg_T->type = buff[0];
-
-            // i comandi passati dal client di tipo
-            // MSG_LOGIN, MSG_REGLOG, MSG_LOGOUT, MSG_LIST, MSG_BRDCAST
-            // non hanno i campi sender & receiver.
-
-            // il comando MSG_SINGLE ha solo il campo receiver.
-
-            // in poche parole ( da lato del server ), il campo sender messo nella
-            // struttura è SEMPRE vuoto
-
 
             // i 3 decimali devo leggerli lo stesso per consumare il socket
 
@@ -124,12 +124,20 @@ void *launchThreadWorker(void *newConn) {
             msg_T->msglen = atoi(buff);
 
 
-            lenToAllocate = sizeof(char) * atoi(buff);
-            buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
-            read(sock, buff, lenToAllocate); // leggo il campo successivo
-            msg_T->msg = malloc(lenToAllocate + 1);
-            msg_T->msg = strdup(buff);
-            msg_T->msg[lenToAllocate] = '\0';
+            // essendo il campo msg vuoto, non devo leggerlo.
+            // nella struttura sarà riempito con " "
+            if (msg_T->type == MSG_LOGOUT || msg_T->type == MSG_LIST) {
+                msg_T->msg = malloc(sizeof(" ") + 1);
+                msg_T->msg = strdup(" ");
+                msg_T->msg[2] = '\0';
+            } else {
+                lenToAllocate = sizeof(char) * atoi(buff);
+                buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
+                read(sock, buff, lenToAllocate); // leggo il campo successivo
+                msg_T->msg = malloc(lenToAllocate + 1);
+                msg_T->msg = strdup(buff);
+                msg_T->msg[lenToAllocate] = '\0';
+            }
 
 
             printf("type: %c\n", msg_T->type);
