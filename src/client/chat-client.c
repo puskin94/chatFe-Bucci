@@ -17,14 +17,14 @@
 #define SERVERIP "127.0.0.1"
 
 
-#define MSG_LOGIN "L"
-#define MSG_REGLOG "R"
-#define MSG_OK "O"
-#define MSG_ERROR "E"
-#define MSG_SINGLE "S"
-#define MSG_BRDCAST "B"
-#define MSG_LIST "I"
-#define MSG_LOGOUT "X"
+#define MSG_LOGIN 'L'
+#define MSG_REGLOG 'R'
+#define MSG_OK 'O'
+#define MSG_ERROR 'E'
+#define MSG_SINGLE 'S'
+#define MSG_BRDCAST 'B'
+#define MSG_LIST 'I'
+#define MSG_LOGOUT 'X'
 
 
 // questa funzione consente la creazione di una stringa contenente la lunghezza
@@ -52,7 +52,8 @@ int main(int argc, char *argv[]) {
     char *buff = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
                                         // ovvero il primo token da leggere
 
-    //char *buffRisp = malloc(sizeof(char));
+    char *buffRisp = malloc(sizeof(char));
+
 
     client.sin_family = AF_INET;
     client.sin_port = htons(PORT);
@@ -83,10 +84,10 @@ int main(int argc, char *argv[]) {
         }
 
         if (count == MAXCONNTENT) {
-            printf("Cannot connect to the server\n");
+            printf("[!] Cannot connect to the server\n");
             return -1;
         } else {
-            printf("Connected to the Server!\n");
+            printf("[+] Connected to the Server!\n");
         }
 
 
@@ -99,7 +100,7 @@ int main(int argc, char *argv[]) {
             // ./chat-client -r "Giovanni Bucci giovanni01.bucci@student.unife.it" puskin
 
 
-            strcat(buff,MSG_REGLOG);
+            sprintf(buff,"%c", MSG_REGLOG);
 
             buffSize += 6;
             buff = realloc(buff, buffSize);
@@ -113,7 +114,6 @@ int main(int argc, char *argv[]) {
 
             tmpLenMsg += strlen(":"); tmpMsg = realloc(tmpMsg, tmpLenMsg);
             strcat(tmpMsg, ":");
-
 
 
             if (sscanf(argv[2], "%s %s %s", name, surname, mail ) == 3) {
@@ -141,9 +141,6 @@ int main(int argc, char *argv[]) {
             }
 
 
-
-
-
             lenMsg = strlen(tmpMsg);
             getLen(buff, lenMsg, 5); // calcolo la lunghezza del messaggio successivo
 
@@ -160,7 +157,7 @@ int main(int argc, char *argv[]) {
 
         } else if (argc == 2) {
             // ultimo caso: se è presente un solo parametro, deve essere per forza il login
-            strcat(buff, MSG_LOGIN);
+            sprintf(buff,"%c", MSG_LOGIN);
 
             buffSize += 6;
             buff = realloc(buff, buffSize);
@@ -184,17 +181,24 @@ int main(int argc, char *argv[]) {
         // qualunque sia il comando inviato, devo aspettare un messaggio
         // di risposta ( MSG_OK || MSG_ERROR ) dal server
 
-/*        if(read(sockId, buffRisp, 3 < 0)) {
-            printf("non ricevo nulla\n");
+        if(read(sockId, buffRisp, sizeof(char) )< 0) {
+            printf("[!] Error contacting the server\n");
         } else {
-            if (strcmp(buffRisp, "OK") == 0) {
-                printf("molto bene\n");
-            } else {
-                printf("molto male\n");
-            }
-            printf("%s\n", buffRisp);
-        }*/
+            if (buffRisp[0] == MSG_ERROR) {
+                // leggo la lunghezza del messaggio di errore
+                buffRisp = realloc(buffRisp, 3); // adesso può contenere 3 decimali
+                read(sockId, buffRisp, 3);
+                lenMsg = sizeof(char) * atoi(buffRisp);
 
+                // rialloco la dimensione del buffer di conseguenza
+                buffRisp = realloc(buffRisp, lenMsg);
+                // ora sono pronto a leggere la risposta
+                read(sockId, buffRisp, lenMsg);
+                printf("[!] %s\n", buffRisp);
+            } else {
+                printf("[+] Action completed successfully!\n");
+            }
+        }
 
     }
 

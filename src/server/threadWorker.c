@@ -24,6 +24,7 @@
 #define MSG_LIST 'I'
 #define MSG_LOGOUT 'X'
 
+
 typedef struct {
     char type;
     char *sender;
@@ -34,8 +35,9 @@ typedef struct {
 
 static hash_t HASH_TABLE;
 
-void registerNewUser(char *msg, hdata_t *user);
-int loginUser(char *user, hdata_t *bs, int sock);
+bool registerNewUser(char *msg, hdata_t *user);
+bool loginUser(char *user, hdata_t *bs, int sock);
+char *listUser(hdata_t *online);
 
 
 void *launchThreadWorker(void *newConn) {
@@ -46,7 +48,7 @@ void *launchThreadWorker(void *newConn) {
     char *buff = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
                                         // ovvero il primo token da leggere
 
-    char *tmpBuff;
+    char *tmpBuff = malloc(sizeof(char));
 
     // questa variabile verrà riempita dopo la registrazione con
     // il nome dell'utente che dovrà effettuare il login
@@ -54,7 +56,6 @@ void *launchThreadWorker(void *newConn) {
 
     int lenToAllocate;
     int sock = *(int*)newConn;
-    int retVal;
 
     bool go = true;
 
@@ -179,44 +180,55 @@ void *launchThreadWorker(void *newConn) {
             buildLog(logMsg, 0);*/
 
 
-            // se questo thread riceve il comando di registrazione o listing
-            // lo esegue
-
             if (msg_T->type == MSG_REGLOG) {
 
                 // prima inserisco il nuovo utente nella hash table
                 // buff contiene ancora il messaggio ricevuto dal client
-                registerNewUser(buff, user);
-                // e poi gli faccio eseguire il login
                 userName = strtok(tmpBuff, ":");
-                retVal = loginUser(userName, bs, sock);
-                if (retVal < 0) {
-                    printf("devo ritornare errore\n");
+                // pulisco il buffer per poterlo utilizzare per inviare messaggi
+                // al client
+                bzero(tmpBuff, lenToAllocate);
+
+                if (registerNewUser(buff, user) && loginUser(userName, bs, sock)) {
+                    // se sia la registrazione che il login sono avvenuti con successo
+                    // costruisco il messaggio di risposta per il client
+                    lenToAllocate = sizeof(char);
+                    tmpBuff = realloc(tmpBuff, lenToAllocate);
+                    sprintf(tmpBuff,"%c", MSG_OK);
                 } else {
-                    printf("tutto bene\n");
+                    // altrimenti costruisce il messaggio di errore
+                    lenToAllocate = sizeof(char) * 61;
+                    tmpBuff = realloc(tmpBuff, lenToAllocate);
+                    sprintf(tmpBuff,"%c", MSG_ERROR);
+                    strcat(tmpBuff, "061");
+                    strcat(tmpBuff, "Error during Registration... ( username already taken ? )");
                 }
 
             }
+/*            if (msg_T->type == MSG_LIST) {
+                // la funzione sottostante ritorna un buffer
+                // contenente la lista di utenti online ( sockid != -1 )
+
+            }*/
 
 
-            // differenziazione delle operazioni da eseguire
+            // la send sottostante ha il compito di informare il client se
+            // le operazioni richieste sono andate a buon fine
 
-
-/*            if(send(sock , "OK" , 3 , 0) < 0) {
-                printf("[!] Cannot send registration request to the server!\n");
-            } else {
-                printf("[+] Sent Registration Request\n");
+            if (msg_T->type == MSG_REGLOG) {
+                if(send(sock , tmpBuff , lenToAllocate , 0) < 0) {
+                    buildLog("[!] Cannot send Info to the client!", 1);
+                }
             }
-*/
         }
 
 
     }
-    free(buff);
+    //free(buff);
     pthread_exit(NULL);
 }
 
-void registerNewUser(char *msg, hdata_t *user) {
+bool registerNewUser(char *msg, hdata_t *user) {
 
     // variabili necessarie all'inserimento dei dati nella hash table
     char *userName;
@@ -224,28 +236,35 @@ void registerNewUser(char *msg, hdata_t *user) {
     char *mail;
 
     userName = strtok(msg, ":");
-    fullName = strtok(NULL, ":");
-    mail = strtok(NULL, ":");
 
-    user->uname = userName;
-    user->fullname = fullName;
-    user->email = mail;
-    user->sockid = -1;
+    // se il nome utente non è ancora stato usato
+    if (CERCAHASH(userName, HASH_TABLE) == NULL) {
+        fullName = strtok(NULL, ":");
+        mail = strtok(NULL, ":");
 
-    INSERISCIHASH(user->uname, (void*) user, HASH_TABLE);
+        user->uname = userName;
+        user->fullname = fullName;
+        user->email = mail;
+        user->sockid = -1;
 
-    printf("dalla registrazione:%s\n",user->uname );
-
+        INSERISCIHASH(user->uname, (void*) user, HASH_TABLE);
+        return true;
+    }
+    return false;
 }
 
-int loginUser(char *user, hdata_t *bs, int sock) {
+bool loginUser(char *user, hdata_t *bs, int sock) {
 
     bs = CERCAHASH(user, HASH_TABLE);
     if ( bs == NULL ) {
         buildLog("Username not Found", 0);
-        return -1;
+        return false;
     }
     bs->sockid = sock;
-
-    return 0;
+    return true;
 }
+
+
+/*char *listUser(hdata_t *online) {
+
+}*/
