@@ -33,17 +33,18 @@ typedef struct {
     char *msg;
 } msg_t;
 
-static hash_t HASH_TABLE;
 
 bool registerNewUser(char *msg, hdata_t *user);
 bool loginUser(char *user, hdata_t *bs, int sock);
 char *listUser(hdata_t *online);
 char *buildMsgForSocket(int success);
 
+static hash_t HASH_TABLE;
+
 
 void *launchThreadWorker(void *newConn) {
 
-    pthread_mutex_t mux = PTHREAD_MUTEX_INITIALIZER;
+    //pthread_mutex_t mux = PTHREAD_MUTEX_INITIALIZER;
 
 
     char *buff = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
@@ -58,16 +59,16 @@ void *launchThreadWorker(void *newConn) {
     int lenToAllocate;
     int sock = *(int*)newConn;
 
-    bool go = true;
-
     char logMsg[256];
 
     int success = 0;
 
+    bool go = true;
+
 
     msg_t *msg_T = malloc(sizeof(struct msg_t*));
 
-    hdata_t *hashUser = (hdata_t *) malloc(sizeof(hdata_t));
+    hdata_t *hashUser = (hdata_t *) malloc(sizeof(HASH_TABLE));
 
     // 'pulisco' il buffer
     // 'pulisco' l'array dei log
@@ -80,14 +81,9 @@ void *launchThreadWorker(void *newConn) {
     // Viene ricevuto il messaggio e controllato quale servizio
     // viene richiesto
 
+    while(go) {
 
-    if(read(sock, buff, sizeof(char)) < 0) {
-
-        printf("[!] Error while reading from socket\n");
-
-    } else {
-
-        while (go) {
+        if(read(sock, buff, sizeof(char))) {
 
             /* nelle successive linee viene riempita la struttura 'msg_T'.
             ogni campo viene letto dal socket attraverso una read.
@@ -147,7 +143,7 @@ void *launchThreadWorker(void *newConn) {
 
 
             // essendo il campo msg vuoto, non devo leggerlo.
-            // nella struttura sarà riempito con " "
+            // nella struttura sarà riempito con ""
             if (msg_T->type == MSG_LOGOUT || msg_T->type == MSG_LIST) {
                 msg_T->msg = malloc(sizeof(""));
                 msg_T->msg = strdup("");
@@ -166,35 +162,36 @@ void *launchThreadWorker(void *newConn) {
 
 
             // ORA TUTTO IL MESSAGGIO È STATO MESSO DENTRO LA STRUTTURA
+        }
+
+        // TODO //
+        // In ogni caso il thread worker deve scrivere sul log file
+        // il comando che dovrà eseguire
+        /*strcat(logMsg, msg_T->type);
+        strcat(logMsg, ":");
+        strcat(logMsg, msg_T->msg);
+        buildLog(logMsg, 0);*/
+
+        userName = strtok(msg_T->msg, ":");
+        // pulisco il buffer per poterlo utilizzare per inviare messaggi
+        // al client
+        bzero(tmpBuff, lenToAllocate);
 
 
-            // TODO //
-            // In ogni caso il thread worker deve scrivere sul log file
-            // il comando che dovrà eseguire
-            /*strcat(logMsg, msg_T->type);
-            strcat(logMsg, ":");
-            strcat(logMsg, msg_T->msg);
-            buildLog(logMsg, 0);*/
-
-            userName = strtok(msg_T->msg, ":");
-            // pulisco il buffer per poterlo utilizzare per inviare messaggi
-            // al client
-            bzero(tmpBuff, lenToAllocate);
-
-
-            // leggere i commenti di 'buildMsgForSocket()''
-            if (msg_T->type == MSG_REGLOG &&
-                !(registerNewUser(buff, hashUser) &&
+        // leggere i commenti di 'buildMsgForSocket()''
+        if (msg_T->type == MSG_REGLOG &&
+            !(registerNewUser(buff, hashUser) &&
                 loginUser(userName, hashUser, sock))) {
 
                 success = -1;
-            }
+        } else if (msg_T->type == MSG_LOGIN &&
+            !(loginUser(userName, hashUser, sock))) {
 
-            if (msg_T->type == MSG_LOGIN &&
-                !(loginUser(userName, hashUser, sock))) {
+            success = -2;
+        } else if (msg_T->type == MSG_LOGOUT) {
 
-                success = -2;
-            }
+            go = false;
+        }
 
             /*if (msg_T->type == MSG_LIST) {
                 // la funzione sottostante ritorna un buffer
@@ -202,20 +199,17 @@ void *launchThreadWorker(void *newConn) {
 
             }*/
 
-            tmpBuff = buildMsgForSocket(success);
-
+        tmpBuff = buildMsgForSocket(success);
 
             // la send sottostante ha il compito di informare il client se
             // le operazioni richieste sono andate a buon fine o meno
 
-            if(send(sock , tmpBuff , strlen(tmpBuff) , 0) < 0) {
-                buildLog("[!] Cannot send Info to the client!", 1);
-            }
+        if(send(sock , tmpBuff , strlen(tmpBuff) , 0) < 0) {
+            buildLog("[!] Cannot send Info to the client!", 1);
         }
-
-
     }
-    //free(buff);
+    close(sock);
+    free(tmpBuff); free(buff);
     pthread_exit(NULL);
 }
 
@@ -249,10 +243,10 @@ char * buildMsgForSocket(int success) {
             strcat(tmpBuff, "Error during Registration... ( username already taken ? )");
         }
         if (success == -2) {
-            lenToAllocate = sizeof(char) * 54;
+            lenToAllocate = sizeof(char) * 44;
             tmpBuff = realloc(tmpBuff, lenToAllocate);
-            strcat(tmpBuff, "054");
-            strcat(tmpBuff, "Error during Login... ( username already taken ? )");
+            strcat(tmpBuff, "044");
+            strcat(tmpBuff, "Error during Login... Username not found");
         }
     }
 

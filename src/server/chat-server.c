@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     int pid;
 
     // controllo sul necessario numero di parametri
-    if (argc < 3) {
+    if (argc != 3) {
         fprintf(stderr,"Wrong param number\n");
         return -1;
     }

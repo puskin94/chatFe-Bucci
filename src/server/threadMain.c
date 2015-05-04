@@ -86,18 +86,14 @@ void *launchThreadMain(void *arg) {
             } else {
                 printf("\n[+] New Client Connected\n");
 
-                if(pthread_create(&threadWorker, &attr, &launchThreadWorker, (void *)&newConn)!= 0) {
+                if(pthread_create(&threadWorker, &attr, &launchThreadWorker, (void *)&newConn) != 0) {
                     buildLog("Failed to create threadWorker", 1);
                 }
-
             }
-
         }
-
         close(newConn);
 
     }
-
     close(sockId);
     return NULL;
 
