@@ -38,6 +38,7 @@ static hash_t HASH_TABLE;
 bool registerNewUser(char *msg, hdata_t *user);
 bool loginUser(char *user, hdata_t *bs, int sock);
 char *listUser(hdata_t *online);
+char *buildMsgForSocket(int success);
 
 
 void *launchThreadWorker(void *newConn) {
@@ -61,11 +62,12 @@ void *launchThreadWorker(void *newConn) {
 
     char logMsg[256];
 
+    int success = 0;
+
 
     msg_t *msg_T = malloc(sizeof(struct msg_t*));
 
-    hdata_t *user = (hdata_t *) malloc(sizeof(hdata_t));
-    hdata_t *bs = (hdata_t *) malloc(sizeof(hdata_t));
+    hdata_t *hashUser = (hdata_t *) malloc(sizeof(hdata_t));
 
     // 'pulisco' il buffer
     // 'pulisco' l'array dei log
@@ -163,12 +165,7 @@ void *launchThreadWorker(void *newConn) {
             }
 
 
-
-            printf("type: %c\n", msg_T->type);
-            printf("sender: %s\n", msg_T->sender);
-            printf("receiver: %s\n", msg_T->receiver);
-            printf("msglen: %d\n", msg_T->msglen);
-            printf("mesg: %s\n", msg_T->msg);
+            // ORA TUTTO IL MESSAGGIO È STATO MESSO DENTRO LA STRUTTURA
 
 
             // TODO //
@@ -179,46 +176,40 @@ void *launchThreadWorker(void *newConn) {
             strcat(logMsg, msg_T->msg);
             buildLog(logMsg, 0);*/
 
+            userName = strtok(msg_T->msg, ":");
+            // pulisco il buffer per poterlo utilizzare per inviare messaggi
+            // al client
+            bzero(tmpBuff, lenToAllocate);
 
-            if (msg_T->type == MSG_REGLOG) {
 
-                // prima inserisco il nuovo utente nella hash table
-                // buff contiene ancora il messaggio ricevuto dal client
-                userName = strtok(tmpBuff, ":");
-                // pulisco il buffer per poterlo utilizzare per inviare messaggi
-                // al client
-                bzero(tmpBuff, lenToAllocate);
+            // leggere i commenti di 'buildMsgForSocket()''
+            if (msg_T->type == MSG_REGLOG &&
+                !(registerNewUser(buff, hashUser) &&
+                loginUser(userName, hashUser, sock))) {
 
-                if (registerNewUser(buff, user) && loginUser(userName, bs, sock)) {
-                    // se sia la registrazione che il login sono avvenuti con successo
-                    // costruisco il messaggio di risposta per il client
-                    lenToAllocate = sizeof(char);
-                    tmpBuff = realloc(tmpBuff, lenToAllocate);
-                    sprintf(tmpBuff,"%c", MSG_OK);
-                } else {
-                    // altrimenti costruisce il messaggio di errore
-                    lenToAllocate = sizeof(char) * 61;
-                    tmpBuff = realloc(tmpBuff, lenToAllocate);
-                    sprintf(tmpBuff,"%c", MSG_ERROR);
-                    strcat(tmpBuff, "061");
-                    strcat(tmpBuff, "Error during Registration... ( username already taken ? )");
-                }
-
+                success = -1;
             }
-/*            if (msg_T->type == MSG_LIST) {
+
+            if (msg_T->type == MSG_LOGIN &&
+                !(loginUser(userName, hashUser, sock))) {
+
+                success = -2;
+            }
+
+            /*if (msg_T->type == MSG_LIST) {
                 // la funzione sottostante ritorna un buffer
                 // contenente la lista di utenti online ( sockid != -1 )
 
             }*/
 
+            tmpBuff = buildMsgForSocket(success);
+
 
             // la send sottostante ha il compito di informare il client se
-            // le operazioni richieste sono andate a buon fine
+            // le operazioni richieste sono andate a buon fine o meno
 
-            if (msg_T->type == MSG_REGLOG) {
-                if(send(sock , tmpBuff , lenToAllocate , 0) < 0) {
-                    buildLog("[!] Cannot send Info to the client!", 1);
-                }
+            if(send(sock , tmpBuff , strlen(tmpBuff) , 0) < 0) {
+                buildLog("[!] Cannot send Info to the client!", 1);
             }
         }
 
@@ -226,6 +217,47 @@ void *launchThreadWorker(void *newConn) {
     }
     //free(buff);
     pthread_exit(NULL);
+}
+
+char * buildMsgForSocket(int success) {
+
+    int lenToAllocate;
+    char *tmpBuff = malloc(sizeof(char));
+
+    /* la gestione del successo o meno delle azioni richieste dipende da questa funzione.
+    Se l'azione è stata eseguita con successo, la variabile 'success' ha valore 0
+    quindi il messaggio da spedire al client è MSG_OK.
+    In caso contrario 'success' avrà un valore negativo. In base alla tabella
+    sottostante vengono creati diversi messaggi di errore da spedire al client*/
+
+    /*
+    success == -1 -> registrazione || login falliti ( username già presente nella table )
+    success == -2 -> login fallito
+    */
+
+    if (success == 0) {
+        sprintf(tmpBuff,"%c", MSG_OK);
+    } else {
+        sprintf(tmpBuff,"%c", MSG_ERROR);
+
+        // in caso di 'success' < 0 il messaggio ritornato dalla funzione è composto come
+        // <lunghezza del messaggio><testo del messaggio>
+        if (success == -1) {
+            lenToAllocate = sizeof(char) * 61;
+            tmpBuff = realloc(tmpBuff, lenToAllocate);
+            strcat(tmpBuff, "061");
+            strcat(tmpBuff, "Error during Registration... ( username already taken ? )");
+        }
+        if (success == -2) {
+            lenToAllocate = sizeof(char) * 54;
+            tmpBuff = realloc(tmpBuff, lenToAllocate);
+            strcat(tmpBuff, "054");
+            strcat(tmpBuff, "Error during Login... ( username already taken ? )");
+        }
+    }
+
+    return tmpBuff;
+
 }
 
 bool registerNewUser(char *msg, hdata_t *user) {
@@ -254,9 +286,8 @@ bool registerNewUser(char *msg, hdata_t *user) {
 }
 
 bool loginUser(char *user, hdata_t *bs, int sock) {
-
     bs = CERCAHASH(user, HASH_TABLE);
-    if ( bs == NULL ) {
+    if (bs == NULL) {
         buildLog("Username not Found", 0);
         return false;
     }
