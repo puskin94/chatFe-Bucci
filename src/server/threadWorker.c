@@ -82,6 +82,7 @@ void *launchThreadWorker(void *newConn) {
     // viene richiesto
 
     while(go) {
+        buff = realloc(buff, sizeof(char));
 
         if(read(sock, buff, sizeof(char))) {
 
@@ -159,10 +160,14 @@ void *launchThreadWorker(void *newConn) {
                 tmpBuff = malloc(lenToAllocate);
                 tmpBuff = strdup(buff);
             }
-
-
             // ORA TUTTO IL MESSAGGIO È STATO MESSO DENTRO LA STRUTTURA
         }
+
+        printf("type: %c\n", msg_T->type);
+        printf("sender: %s\n", msg_T->sender);
+        printf("receiver: %s\n", msg_T->receiver);
+        printf("msglen: %d\n", msg_T->msglen);
+        printf("mesg: %s\n", msg_T->msg);
 
         // TODO //
         // In ogni caso il thread worker deve scrivere sul log file
@@ -201,12 +206,13 @@ void *launchThreadWorker(void *newConn) {
 
         tmpBuff = buildMsgForSocket(success);
 
-            // la send sottostante ha il compito di informare il client se
-            // le operazioni richieste sono andate a buon fine o meno
+        // la send sottostante ha il compito di informare il client se
+        // le operazioni richieste sono andate a buon fine o meno
 
         if(send(sock , tmpBuff , strlen(tmpBuff) , 0) < 0) {
             buildLog("[!] Cannot send Info to the client!", 1);
         }
+
     }
     close(sock);
     free(tmpBuff); free(buff);

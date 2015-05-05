@@ -38,17 +38,17 @@ int main(int argc, char *argv[]) {
 
     // intero che indica il numero di tentativi di connessione al server
     int count = 0, sockId;
-    int buffSize = 8;
+    int buffSize = 1;
     int remaining = 5;
     int lenMsg;
-    int tmpLenMsg = 8;
+    int tmpLenMsg = 0;
     char intToChar[5];
 
     char name[128];
     char surname[128];
     char mail[256];
 
-    char *tmpMsg = malloc(sizeof(char));
+    char *tmpMsg;
     char *buff = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
                                         // ovvero il primo token da leggere
 
@@ -99,7 +99,6 @@ int main(int argc, char *argv[]) {
 
             // ./chat-client -r "Giovanni Bucci giovanni01.bucci@student.unife.it" puskin
 
-
             sprintf(buff,"%c", MSG_REGLOG);
 
             buffSize += 6;
@@ -109,8 +108,9 @@ int main(int argc, char *argv[]) {
 
             // costruzione del messaggio da inviare
 
-            tmpLenMsg += strlen(argv[3]); tmpMsg = realloc(tmpMsg, tmpLenMsg);
+            tmpLenMsg += strlen(argv[3]); tmpMsg = malloc(sizeof(char) * tmpLenMsg);
             strcat(tmpMsg, argv[3]); // username
+
 
             tmpLenMsg += strlen(":"); tmpMsg = realloc(tmpMsg, tmpLenMsg);
             strcat(tmpMsg, ":");
@@ -142,11 +142,14 @@ int main(int argc, char *argv[]) {
 
 
             lenMsg = strlen(tmpMsg);
+            buffSize += lenMsg + 1;
+
             getLen(buff, lenMsg, 5); // calcolo la lunghezza del messaggio successivo
 
-            buffSize += lenMsg; buff = realloc(buff, buffSize);
+            buff = realloc(buff, buffSize);
             strcat(buff, tmpMsg);
 
+            printf("%s---->%d\n",buff, buffSize);
 
 
             if(send(sockId , buff , buffSize , 0) < 0) {
@@ -165,9 +168,10 @@ int main(int argc, char *argv[]) {
             buffSize += 5; buff = realloc(buff, buffSize);
 
             lenMsg = strlen(argv[1]);
+            buffSize += lenMsg + 1;
             getLen(buff, lenMsg, 5); // calcolo la lunghezza del messaggio successivo
 
-            buffSize += lenMsg; buff = realloc(buff, buffSize);
+            buff = realloc(buff, buffSize);
             strcat(buff, argv[1]);
 
 
@@ -218,5 +222,4 @@ void getLen(char *buff, int len, int threeOrFive) {
         strcat(buff, "0");
     }
     strcat(buff, intToChar);
-
 }
