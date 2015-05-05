@@ -27,10 +27,6 @@
 #define MSG_LOGOUT 'X'
 
 
-// questa funzione consente la creazione di una stringa contenente la lunghezza
-// in byte del campo passato come parametro
-void getLen(char *buff, int len, int threeOrFive);
-
 
 int main(int argc, char *argv[]) {
 
@@ -38,7 +34,7 @@ int main(int argc, char *argv[]) {
 
     // intero che indica il numero di tentativi di connessione al server
     int count = 0, sockId;
-    int buffSize = 1;
+    int buffSize;
     int remaining = 5;
     int lenMsg;
     int tmpLenMsg = 0;
@@ -93,63 +89,29 @@ int main(int argc, char *argv[]) {
 
         // visualizzazione dell' help
         if (strcmp(argv[1], "-h") == 0) {
+
             printHelp();
+
         } else if ((strcmp(argv[1], "-r") == 0) && argc == 4) {
             // se il parametro è '-r' e ci sono tutti i parametri necessari
 
-            // ./chat-client -r "Giovanni Bucci giovanni01.bucci@student.unife.it" puskin
-
-            sprintf(buff,"%c", MSG_REGLOG);
-
-            buffSize += 6;
-            buff = realloc(buff, buffSize);
-            strcat(buff, "000000"); // non ci sono ne sender ne receiver
-            buffSize += 5; buff = realloc(buff, buffSize);
-
-            // costruzione del messaggio da inviare
-
-            tmpLenMsg += strlen(argv[3]); tmpMsg = malloc(sizeof(char) * tmpLenMsg);
-            strcat(tmpMsg, argv[3]); // username
-
-
-            tmpLenMsg += strlen(":"); tmpMsg = realloc(tmpMsg, tmpLenMsg);
-            strcat(tmpMsg, ":");
-
-
             if (sscanf(argv[2], "%s %s %s", name, surname, mail ) == 3) {
 
+                buffSize = 15+strlen(argv[3])+strlen(name)+strlen(surname)+strlen(mail);
+                /*
+                15 ==
+                    1 = type
+                    6 = 000000
+                    5 = msglen
+                    3 = 2 * : + " "
+                */
+                buff = realloc(buff, buffSize);
 
-                tmpLenMsg += strlen(name);
-                tmpMsg = realloc(tmpMsg, tmpLenMsg);
-                strcat(tmpMsg, name); // nome
-
-
-                tmpLenMsg += strlen(" "); tmpMsg = realloc(tmpMsg, tmpLenMsg);
-                strcat(tmpMsg, " ");
-
-
-                tmpLenMsg += strlen(surname); tmpMsg = realloc(tmpMsg, tmpLenMsg);
-                strcat(tmpMsg, surname); // cognome
-
-                tmpLenMsg += strlen(":"); tmpMsg = realloc(tmpMsg, tmpLenMsg);
-                strcat(tmpMsg, ":");
-
-
-                tmpLenMsg += strlen(mail); tmpMsg = realloc(tmpMsg, tmpLenMsg);
-                strcat(tmpMsg, mail); // mail
+                sprintf(buff,"%c000000%05d%s:%s %s:%s", MSG_REGLOG,
+                                                        (strlen(argv[3])+strlen(name)+strlen(surname)+strlen(mail)) + 3,
+                                                        argv[3], name, surname, mail);
 
             }
-
-
-            lenMsg = strlen(tmpMsg);
-            buffSize += lenMsg + 1;
-
-            getLen(buff, lenMsg, 5); // calcolo la lunghezza del messaggio successivo
-
-            buff = realloc(buff, buffSize);
-            strcat(buff, tmpMsg);
-
-            printf("%s---->%d\n",buff, buffSize);
 
 
             if(send(sockId , buff , buffSize , 0) < 0) {
@@ -160,20 +122,17 @@ int main(int argc, char *argv[]) {
 
         } else if (argc == 2) {
             // ultimo caso: se è presente un solo parametro, deve essere per forza il login
-            sprintf(buff,"%c", MSG_LOGIN);
-
-            buffSize += 6;
-            buff = realloc(buff, buffSize);
-            strcat(buff, "000000"); // non ci sono ne sender ne receiver
-            buffSize += 5; buff = realloc(buff, buffSize);
-
             lenMsg = strlen(argv[1]);
-            buffSize += lenMsg + 1;
-            getLen(buff, lenMsg, 5); // calcolo la lunghezza del messaggio successivo
-
+            buffSize = 12+lenMsg;
+            /*
+            12 ==
+                1 = type
+                6 = 000000
+                5 = msglen
+            */
             buff = realloc(buff, buffSize);
-            strcat(buff, argv[1]);
 
+            sprintf(buff,"%c000000%05d%s", MSG_LOGIN, lenMsg, argv[1]);
 
             if(send(sockId , buff , buffSize , 0) < 0) {
                 printf("[!] Cannot send login request to the server!\n");
@@ -205,21 +164,5 @@ int main(int argc, char *argv[]) {
         }
 
     }
-
-
     return 0;
-}
-
-void getLen(char *buff, int len, int threeOrFive) {
-
-    char intToChar[5];
-    int i;
-
-    sprintf(intToChar, "%d", len);
-
-    threeOrFive -= strlen(intToChar);
-    for (i = 0; i < threeOrFive; i++) {
-        strcat(buff, "0");
-    }
-    strcat(buff, intToChar);
 }

@@ -62,9 +62,9 @@ void *launchThreadWorker(void *newConn) {
     char logMsg[256];
 
     int success = 0;
+    int forCounter;
 
     bool go = true;
-
 
     msg_t *msg_T = malloc(sizeof(struct msg_t*));
 
@@ -81,87 +81,77 @@ void *launchThreadWorker(void *newConn) {
     // Viene ricevuto il messaggio e controllato quale servizio
     // viene richiesto
 
-    while(go) {
-        buff = realloc(buff, sizeof(char));
-
-        if(read(sock, buff, sizeof(char))) {
-
-            /* nelle successive linee viene riempita la struttura 'msg_T'.
-            ogni campo viene letto dal socket attraverso una read.
-            il dato viene inserito in 'char *buff';
-            la grandezza di buff viene allocata dinamicamente attraverso
-            la funzione 'realloc()'.
-            se necessario ( per i campi char * ), la grandezza dei componenti
-            della struttura viene allocata dinamicamente attraverso
-            la funzione 'malloc()' */
-
-            // -------> REGOLE DIPENDENTI DALLA CONSEGNA <------- //
-
-            /* i comandi passati dal client di tipo
-            MSG_LOGIN, MSG_REGLOG, MSG_LOGOUT, MSG_LIST, MSG_BRDCAST
-            non hanno i campi sender & receiver.
-            il comando MSG_SINGLE ha solo il campo receiver.
-            in poche parole ( da lato del server ), il campo sender messo nella
-            struttura è SEMPRE vuoto
-            per i messaggi di tipo MSG_LOGOUT & MSG_LIST il campo msg è vuoto */
+    while(go && (read(sock, buff, sizeof(char)) > 0)) {
 
 
-            msg_T->type = buff[0];
+        /* nelle successive linee viene riempita la struttura 'msg_T'.
+        ogni campo viene letto dal socket attraverso una read.
+        il dato viene inserito in 'char *buff';
+        la grandezza di buff viene allocata dinamicamente attraverso
+        la funzione 'realloc()'.
+        se necessario ( per i campi char * ), la grandezza dei componenti
+        della struttura viene allocata dinamicamente attraverso
+        la funzione 'malloc()' */
 
-            // i 3 decimali devo leggerli lo stesso per consumare il socket
+        // -------> REGOLE DIPENDENTI DALLA CONSEGNA <------- //
+
+        /* i comandi passati dal client di tipo
+        MSG_LOGIN, MSG_REGLOG, MSG_LOGOUT, MSG_LIST, MSG_BRDCAST
+        non hanno i campi sender & receiver.
+        il comando MSG_SINGLE ha solo il campo receiver.
+        in poche parole ( da lato del server ), il campo sender messo nella
+        struttura è SEMPRE vuoto
+        per i messaggi di tipo MSG_LOGOUT & MSG_LIST il campo msg è vuoto */
+
+
+        msg_T->type = buff[0];
+
+        // i 3 decimali devo leggerli lo stesso per consumare il socket
+        for (forCounter = 0; forCounter < 2; forCounter++) {
 
             buff = realloc(buff, 3); // adesso può contenere 3 decimali
             read(sock, buff, 3); // leggo da sock la lunghezza del prossimo campo
-            msg_T->sender = malloc(sizeof(""));
-            msg_T->sender = strdup("");
 
-            // qua leggo len e receiver
-            buff = realloc(buff, 3); // adesso può contenere 3 decimali
-            read(sock, buff, 3); // leggo da sock la lunghezza del prossimo campo
 
-            // se il messaggio è di tipo MSG_SINGLE
-            // il campo 'receiver' è pieno, quindi devo leggerlo dal socket
-
-            if (msg_T->type == MSG_SINGLE) {
+            // il sender non è mai presente
+            if (atoi(buff) != 0) {
                 lenToAllocate = sizeof(char) * atoi(buff);
                 buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
                 read(sock, buff, lenToAllocate); // leggo il campo successivo
-                msg_T->receiver = malloc(lenToAllocate);
-                msg_T->receiver = strdup(buff);
-            } else {
-                // altrimenti se appartiene alle altre casistiche,
-                // il campo 'receiver' nella struttura deve essere vuoto
-                msg_T->receiver = malloc(sizeof(""));
-                msg_T->receiver = strdup("");
+                if (forCounter == 0) {
+                    msg_T->sender = malloc(lenToAllocate);
+                    msg_T->sender = strdup(buff);
+                } else {
+                    msg_T->receiver = malloc(lenToAllocate);
+                    msg_T->receiver = strdup(buff);
+                }
             }
 
-
-            // qua leggo len e msg
-            // len lo facciamo un po più grande: 5 digit
-            buff = realloc(buff, 5); // adesso può contenere 5 decimali
-            read(sock, buff, 5); // leggo da sock la lunghezza del prossimo campo
-            msg_T->msglen = atoi(buff);
-
-
-            // essendo il campo msg vuoto, non devo leggerlo.
-            // nella struttura sarà riempito con ""
-            if (msg_T->type == MSG_LOGOUT || msg_T->type == MSG_LIST) {
-                msg_T->msg = malloc(sizeof(""));
-                msg_T->msg = strdup("");
-            } else {
-                lenToAllocate = sizeof(char) * atoi(buff);
-                buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
-                read(sock, buff, lenToAllocate); // leggo il campo successivo
-                msg_T->msg = malloc(lenToAllocate);
-                msg_T->msg = strdup(buff);
-
-                // questo servirà dopo per il login
-                // strtok divide la stringa, quindi ho bisogno di una copia
-                tmpBuff = malloc(lenToAllocate);
-                tmpBuff = strdup(buff);
-            }
-            // ORA TUTTO IL MESSAGGIO È STATO MESSO DENTRO LA STRUTTURA
         }
+
+
+        // qua leggo len e msg
+        // len lo facciamo un po più grande: 5 digit
+        buff = realloc(buff, 5); // adesso può contenere 5 decimali
+        read(sock, buff, 5); // leggo da sock la lunghezza del prossimo campo
+        msg_T->msglen = atoi(buff);
+
+
+        if(atoi(buff) != 0) {
+            lenToAllocate = sizeof(char) * atoi(buff);
+            buff = realloc(buff, lenToAllocate); //adesso buff può contenere char * len
+            read(sock, buff, lenToAllocate); // leggo il campo successivo
+            msg_T->msg = malloc(lenToAllocate);
+            msg_T->msg = strdup(buff);
+        }
+
+        if (msg_T->type == MSG_REGLOG || msg_T->type == MSG_LOGIN) {
+            // questo servirà dopo per il login
+            // strtok divide la stringa, quindi ho bisogno di una copia
+            tmpBuff = malloc(lenToAllocate);
+            tmpBuff = strdup(buff);
+        }
+        // ORA TUTTO IL MESSAGGIO È STATO MESSO DENTRO LA STRUTTURA
 
         printf("type: %c\n", msg_T->type);
         printf("sender: %s\n", msg_T->sender);
@@ -188,7 +178,7 @@ void *launchThreadWorker(void *newConn) {
             !(registerNewUser(buff, hashUser) &&
                 loginUser(userName, hashUser, sock))) {
 
-                success = -1;
+            success = -1;
         } else if (msg_T->type == MSG_LOGIN &&
             !(loginUser(userName, hashUser, sock))) {
 
@@ -221,7 +211,7 @@ void *launchThreadWorker(void *newConn) {
 
 char * buildMsgForSocket(int success) {
 
-    int lenToAllocate;
+    int lenToAllocate = 1;
     char *tmpBuff = malloc(sizeof(char));
 
     /* la gestione del successo o meno delle azioni richieste dipende da questa funzione.
@@ -243,16 +233,14 @@ char * buildMsgForSocket(int success) {
         // in caso di 'success' < 0 il messaggio ritornato dalla funzione è composto come
         // <lunghezza del messaggio><testo del messaggio>
         if (success == -1) {
-            lenToAllocate = sizeof(char) * 61;
+            lenToAllocate += sizeof(char) * 60;
             tmpBuff = realloc(tmpBuff, lenToAllocate);
-            strcat(tmpBuff, "061");
-            strcat(tmpBuff, "Error during Registration... ( username already taken ? )");
+            strncat(tmpBuff, "057Error during Registration... ( username already taken ? )", 60);
         }
         if (success == -2) {
-            lenToAllocate = sizeof(char) * 44;
+            lenToAllocate += sizeof(char) * 43;
             tmpBuff = realloc(tmpBuff, lenToAllocate);
-            strcat(tmpBuff, "044");
-            strcat(tmpBuff, "Error during Login... Username not found");
+            strncat(tmpBuff, "040Error during Login... Username not found", 43);
         }
     }
 
