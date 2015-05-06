@@ -108,8 +108,8 @@ int main(int argc, char *argv[]) {
                 buff = realloc(buff, buffSize);
 
                 sprintf(buff,"%c000000%05d%s:%s %s:%s", MSG_REGLOG,
-                                                        (strlen(argv[3])+strlen(name)+strlen(surname)+strlen(mail)) + 3,
-                                                        argv[3], name, surname, mail);
+                                                    (strlen(argv[3])+strlen(name)+strlen(surname)+strlen(mail)) + 3,
+                                                    argv[3], name, surname, mail);
 
             }
 
@@ -162,6 +162,13 @@ int main(int argc, char *argv[]) {
                 printf("[+] Action completed successfully!\n");
             }
         }
+
+/*        if(read(sockId, buffRisp, 300 )< 0) {
+            printf("[!] Error contacting the server\n");
+        } else {
+
+            printf("%s\n",buffRisp );
+        }*/
 
     }
     return 0;

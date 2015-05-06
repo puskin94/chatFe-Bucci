@@ -15,6 +15,7 @@
 #include "include/utils.h"
 #include "include/hash.h"
 #include "include/threadWorker.h"
+#include "include/userManagement.h"
 
 #define PORT 7778
 
@@ -99,51 +100,6 @@ void *launchThreadMain(void *arg) {
 
 }
 
-
-/* la funzione sottostante consente di caricare tutti i dati necessari
-alla gestione degli utenti nella tabella hash */
-
-bool readUserFile() {
-
-    static hash_t HASH_TABLE;
-
-    FILE *fp;
-    char userInfo[771]; // 768 == (256 * 3) + 2 + 1 --> (single max lenght + 2 (:) + 1 (\0))
-
-    char *userName;
-    char *fullName;
-    char *mail;
-
-    fp = fopen(userFile, "r+");
-    if (fp != NULL) {
-
-        HASH_TABLE = CREAHASH();
-        hdata_t *user = (hdata_t *) malloc(sizeof(hdata_t));
-
-        while (fgets (userInfo, sizeof(userInfo), fp)) {
-            userName = strtok(userInfo, ":");
-            fullName = strtok(NULL, ":");
-            mail = strtok(NULL, ":\n");
-
-            if (userName != NULL && fullName != NULL && mail != NULL) {
-
-                user->uname = userName;
-                user->fullname = fullName;
-                user->email = mail;
-                user->sockid = -1;
-
-                INSERISCIHASH(user->uname, (void*) user, HASH_TABLE);
-            }
-        }
-    } else {
-        buildLog("Cannot load userFile. Quitting...", 1);
-        return false;
-    }
-
-    fclose(fp);
-    return true;
-
-}
 
 void sighand(int sig) {
     if ( sig == SIGINT || sig == SIGTERM ) {

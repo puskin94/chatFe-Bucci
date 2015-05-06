@@ -14,6 +14,7 @@
 #include "include/chat-server.h"
 #include "include/utils.h"
 #include "include/hash.h"
+#include "include/userManagement.h"
 
 #define MSG_LOGIN 'L'
 #define MSG_REGLOG 'R'
@@ -34,12 +35,7 @@ typedef struct {
 } msg_t;
 
 
-bool registerNewUser(char *msg, hdata_t *user);
-bool loginUser(char *user, hdata_t *bs, int sock);
-char *listUser(hdata_t *online);
-char *buildMsgForSocket(int success);
-
-static hash_t HASH_TABLE;
+char *buildMsgForSocket(char *tmpBuff, int success);
 
 
 void *launchThreadWorker(void *newConn) {
@@ -68,15 +64,13 @@ void *launchThreadWorker(void *newConn) {
 
     msg_t *msg_T = malloc(sizeof(struct msg_t*));
 
-    hdata_t *hashUser = (hdata_t *) malloc(sizeof(HASH_TABLE));
+    hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
 
     // 'pulisco' il buffer
     // 'pulisco' l'array dei log
     bzero(buff, sizeof(char));
     bzero(logMsg, 256);
 
-
-    HASH_TABLE = CREAHASH();
 
     // Viene ricevuto il messaggio e controllato quale servizio
     // viene richiesto
@@ -112,7 +106,7 @@ void *launchThreadWorker(void *newConn) {
             buff = realloc(buff, 3); // adesso può contenere 3 decimali
             read(sock, buff, 3); // leggo da sock la lunghezza del prossimo campo
 
-
+            // ANNOTAZIONE
             // il sender non è mai presente
             if (atoi(buff) != 0) {
                 lenToAllocate = sizeof(char) * atoi(buff);
@@ -194,25 +188,20 @@ void *launchThreadWorker(void *newConn) {
 
             }*/
 
-        tmpBuff = buildMsgForSocket(success);
+        buildMsgForSocket(tmpBuff, success);
 
         // la send sottostante ha il compito di informare il client se
         // le operazioni richieste sono andate a buon fine o meno
-
         if(send(sock , tmpBuff , strlen(tmpBuff) , 0) < 0) {
             buildLog("[!] Cannot send Info to the client!", 1);
         }
 
     }
     close(sock);
-    free(tmpBuff); free(buff);
     pthread_exit(NULL);
 }
 
-char * buildMsgForSocket(int success) {
-
-    int lenToAllocate = 1;
-    char *tmpBuff = malloc(sizeof(char));
+char *buildMsgForSocket(char *tmpBuff, int success) {
 
     /* la gestione del successo o meno delle azioni richieste dipende da questa funzione.
     Se l'azione è stata eseguita con successo, la variabile 'success' ha valore 0
@@ -228,62 +217,18 @@ char * buildMsgForSocket(int success) {
     if (success == 0) {
         sprintf(tmpBuff,"%c", MSG_OK);
     } else {
-        sprintf(tmpBuff,"%c", MSG_ERROR);
 
         // in caso di 'success' < 0 il messaggio ritornato dalla funzione è composto come
-        // <lunghezza del messaggio><testo del messaggio>
+        // E<lunghezza del messaggio><testo del messaggio>
         if (success == -1) {
-            lenToAllocate += sizeof(char) * 60;
-            tmpBuff = realloc(tmpBuff, lenToAllocate);
-            strncat(tmpBuff, "057Error during Registration... ( username already taken ? )", 60);
+            tmpBuff = realloc(tmpBuff, sizeof(char) * 61);
+            sprintf(tmpBuff,"%c057Error during Registration... ( username already taken ? )", MSG_ERROR);
         }
         if (success == -2) {
-            lenToAllocate += sizeof(char) * 43;
-            tmpBuff = realloc(tmpBuff, lenToAllocate);
-            strncat(tmpBuff, "040Error during Login... Username not found", 43);
+            tmpBuff = realloc(tmpBuff, sizeof(char) * 44);
+            sprintf(tmpBuff,"%c040Error during Login... Username not found", MSG_ERROR);
         }
     }
-
     return tmpBuff;
 
 }
-
-bool registerNewUser(char *msg, hdata_t *user) {
-
-    // variabili necessarie all'inserimento dei dati nella hash table
-    char *userName;
-    char *fullName;
-    char *mail;
-
-    userName = strtok(msg, ":");
-
-    // se il nome utente non è ancora stato usato
-    if (CERCAHASH(userName, HASH_TABLE) == NULL) {
-        fullName = strtok(NULL, ":");
-        mail = strtok(NULL, ":");
-
-        user->uname = userName;
-        user->fullname = fullName;
-        user->email = mail;
-        user->sockid = -1;
-
-        INSERISCIHASH(user->uname, (void*) user, HASH_TABLE);
-        return true;
-    }
-    return false;
-}
-
-bool loginUser(char *user, hdata_t *bs, int sock) {
-    bs = CERCAHASH(user, HASH_TABLE);
-    if (bs == NULL) {
-        buildLog("Username not Found", 0);
-        return false;
-    }
-    bs->sockid = sock;
-    return true;
-}
-
-
-/*char *listUser(hdata_t *online) {
-
-}*/
