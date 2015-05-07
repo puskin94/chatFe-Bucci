@@ -8,7 +8,7 @@
 
 bool readUserFile();
 bool registerNewUser(char *msg, hdata_t *user);
-bool loginUser(char *user, hdata_t *bs, int sock);
-char *listUser(hdata_t *online);
+int loginUser(char *user, hdata_t *bs, int sock);
+char *listUser(char *buff, hdata_t *online);
 
 #endif

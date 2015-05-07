@@ -11,6 +11,7 @@
 #include <pthread.h>
 
 #include "include/utils.h"
+#include "include/threadReader.h"
 
 #define PORT 7778
 #define MAXCONNTENT 10
@@ -50,12 +51,19 @@ int main(int argc, char *argv[]) {
 
     char *buffRisp = malloc(sizeof(char));
 
+    // Questa variabile booleana è essenziale per capire se qualsiasi richiesta
+    // del client ( registrazione || login ) è stata accettata con successo o meno
+    bool isIn = false;
+
 
     client.sin_family = AF_INET;
     client.sin_port = htons(PORT);
     client.sin_addr.s_addr = inet_addr(SERVERIP); // ip del server
 
     sockId = socket(AF_INET, SOCK_STREAM, 0);
+
+    pthread_t threadReader;
+    pthread_t threadListener;
 
     // qua viene gestito il caso con il minor numero di parametri:
     // chat-client <username>
@@ -64,11 +72,14 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    if (strcmp(argv[1], "-h") == 0) {
+        printHelp();
+        return 1;
+    }
+
     // Queste sono le varie casistiche ammesse
 
-    if ( (strcmp(argv[1], "-h") == 0) ||
-        ((strcmp(argv[1], "-r") == 0) && argc == 4) ||
-        (argc == 2) ) {
+    if ( ((strcmp(argv[1], "-r") == 0) && argc == 4) || (argc == 2)) {
 
         // Il client prova a connettersi al server remoto per un massimo di
         // MAXCONNTENT volte
@@ -82,17 +93,11 @@ int main(int argc, char *argv[]) {
         if (count == MAXCONNTENT) {
             printf("[!] Cannot connect to the server\n");
             return -1;
-        } else {
-            printf("[+] Connected to the Server!\n");
         }
+        printf("[+] Connected to the Server!\n");
 
 
-        // visualizzazione dell' help
-        if (strcmp(argv[1], "-h") == 0) {
-
-            printHelp();
-
-        } else if ((strcmp(argv[1], "-r") == 0) && argc == 4) {
+        if ((strcmp(argv[1], "-r") == 0) && argc == 4) {
             // se il parametro è '-r' e ci sono tutti i parametri necessari
 
             if (sscanf(argv[2], "%s %s %s", name, surname, mail ) == 3) {
@@ -160,15 +165,28 @@ int main(int argc, char *argv[]) {
                 printf("[!] %s\n", buffRisp);
             } else {
                 printf("[+] Action completed successfully!\n");
+                isIn = true;
             }
         }
 
-/*        if(read(sockId, buffRisp, 300 )< 0) {
-            printf("[!] Error contacting the server\n");
-        } else {
+    }
 
-            printf("%s\n",buffRisp );
+    // questo if viene eseguito solo se il server ha spedito un messaggio di tipo
+    // MSG_OK
+    if(isIn) {
+
+        // vengono creati 2 thread ( come da consegna ): threadReader & threadListener
+        if (pthread_create(&threadReader, NULL, &launchThreadReader,(void *)&sockId)!= 0) {
+            fprintf(stderr,"Failed to create threadReader");
+            return -2;
+        }
+/*        if (pthread_create(&threadListener, NULL, &launchThreadListener, (void *)&sockId)!= 0) {
+            buildLog("Failed to create threadListener", 1);
+            return -3;
         }*/
+
+        pthread_join(threadReader, NULL);
+        //pthread_join(threadListener, NULL);
 
     }
     return 0;
