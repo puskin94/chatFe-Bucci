@@ -101,6 +101,7 @@ int loginUser(char *user, hdata_t *bs, int sock) {
     bs = CERCAHASH(user, HASH_TABLE);
     if (bs == NULL) {
         buildLog("Username not Found", 0);
+        printf("ritorno -2\n");
         return -2;
     } else if (bs->sockid == -1) {
         bs->sockid = sock;

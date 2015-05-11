@@ -40,9 +40,11 @@ void *launchThreadReader(void *newConn) {
         bzero(msg, sizeof(char) * numChars);
 
         while((ch = getchar()) != '\n') {
-            msg = realloc(msg, sizeof(char) * numChars);
-            strncat(msg, &ch, 1);
             numChars++;
+            if (numChars % 10 == 0) {
+                msg = realloc(msg, sizeof(char) * numChars + 10);
+            }
+            strncat(msg, &ch, 1);
         }
 
         if (msg[0] == '#') {
@@ -50,13 +52,13 @@ void *launchThreadReader(void *newConn) {
             if (strncmp(msg, "#dest", 5) == 0) {
 
                 cmd = strtok(msg, ":");
-                msgText = strtok(NULL, ":");
+                msgText = strdup(strtok(NULL, ":"));
                 // faccio la distinzione tra privato e broadcast
                 if (cmd[5] == ' ') {
-                    msgTo = strtok(cmd, " "); msgTo = strtok(NULL, " ");
+                    msgTo = strdup(strtok(cmd, " ")); strdup(msgTo = strtok(NULL, " "));
                     numChars = (12 + strlen(msgTo) + strlen(msgText));
                     msgToSend = realloc(msgToSend, numChars * sizeof(char));
-                    sprintf(msgToSend, "%c000%03d%s%05d%s", MSG_SINGLE, strlen(msgTo), msgTo, strlen(msgText), msgText);
+                    sprintf(msgToSend, "%c000%03zu%s%05zu%s", MSG_SINGLE, strlen(msgTo), msgTo, strlen(msgText), msgText);
                 } else {
                     printf("figata, broadcast\n");
                 }
@@ -81,7 +83,7 @@ void *launchThreadReader(void *newConn) {
 
             printf("%s\n", msgToSend);
 
-            if(send(sock , msgToSend , numChars +1 , 0) < 0) {
+            if(send(sock , msgToSend , numChars , 0) < 0) {
                 fprintf(stderr,"Cannot send the message to the server\n");
             }
         }

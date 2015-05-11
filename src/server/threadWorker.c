@@ -35,8 +35,8 @@ typedef struct {
 } msg_t;
 
 
-char *buildMsgForSocket(char *tmpBuff, int success);
-void readAndLoadFromSocket(int sock, char *type);
+char *buildMsgForSocket(int success);
+void readAndLoadFromSocket(msg_t *msg_T,int sock, char type);
 
 
 void *launchThreadWorker(void *newConn) {
@@ -45,7 +45,7 @@ void *launchThreadWorker(void *newConn) {
 
     char *buff = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
                                         // ovvero il primo token da leggere
-    char *tmpBuff = malloc(sizeof(char));
+    char *tmpBuff;
 
     // questa variabile verrà riempita dopo la registrazione con
     // il nome dell'utente che dovrà effettuare il login
@@ -56,7 +56,6 @@ void *launchThreadWorker(void *newConn) {
     char logMsg[256];
 
     int success = 0;
-
 
     bool go = true;
 
@@ -75,8 +74,7 @@ void *launchThreadWorker(void *newConn) {
 
     while(go && (read(sock, buff, sizeof(char)) > 0)) {
 
-        readAndLoadFromSocket(sock, buff);
-
+        readAndLoadFromSocket(msg_T, sock, buff[0]);
 
         // TODO //
         // In ogni caso il thread worker deve scrivere sul log file
@@ -86,12 +84,13 @@ void *launchThreadWorker(void *newConn) {
         strcat(logMsg, msg_T->msg);
         buildLog(logMsg, 0);*/
 
-        userName = strtok(msg_T->msg, ":");
+        userName = strdup(msg_T->msg);
+        userName = strtok(userName, ":");
 
         // leggere i commenti di 'buildMsgForSocket()''
         if (msg_T->type == MSG_REGLOG &&
-            !(registerNewUser(buff, hashUser) &&
-                loginUser(userName, hashUser, sock))) {
+            !(registerNewUser(msg_T->msg, hashUser) &&
+                loginUser(userName, hashUser, sock) == 0)) {
 
             success = -1;
         } else if (msg_T->type == MSG_LOGIN) {
@@ -99,8 +98,7 @@ void *launchThreadWorker(void *newConn) {
             success = loginUser(userName, hashUser, sock);
         }
 
-
-        buildMsgForSocket(tmpBuff, success);
+        tmpBuff = buildMsgForSocket(success);
 
         // la send sottostante ha il compito di informare il client se
         // le operazioni richieste sono andate a buon fine o meno
@@ -108,23 +106,22 @@ void *launchThreadWorker(void *newConn) {
             buildLog("[!] Cannot send Info to the client!", 1);
         }
 
+
+        tmpBuff = realloc(tmpBuff, sizeof(char));
         // In questo ciclo inizia il while che consente lo scambio interattivo
         // di messaggi tra client e server. Viene eseguito solamente se il server
         // ha risposto affermativamente al comando iniziale inviato dal client
-
-        tmpBuff = realloc(tmpBuff, sizeof(char));
-
-
         while (success == 0 && (read(sock, tmpBuff, sizeof(char)) > 0)) {
-            readAndLoadFromSocket(sock, buff);
+            readAndLoadFromSocket(msg_T, sock, buff[0]);
         }
+
 
     }
     close(sock);
     pthread_exit(NULL);
 }
 
-char *buildMsgForSocket(char *tmpBuff, int success) {
+char *buildMsgForSocket(int success) {
 
     /* la gestione del successo o meno delle azioni richieste dipende da questa funzione.
     Se l'azione è stata eseguita con successo, la variabile 'success' ha valore 0
@@ -136,6 +133,8 @@ char *buildMsgForSocket(char *tmpBuff, int success) {
     success == -1 -> registrazione || login falliti ( username già presente nella table )
     success == -2 -> login fallito
     */
+
+    char *tmpBuff = malloc(sizeof(char));
 
     switch(success) {
         case 0:
@@ -159,7 +158,7 @@ char *buildMsgForSocket(char *tmpBuff, int success) {
 
 }
 
-void readAndLoadFromSocket(int sock, char *type) {
+void readAndLoadFromSocket(msg_t *msg_T, int sock, char type) {
 
     int lenToAllocate;
     char *buffer = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
@@ -167,10 +166,7 @@ void readAndLoadFromSocket(int sock, char *type) {
     int forCounter;
 
 
-    msg_t *msg_T = malloc(sizeof(struct msg_t*));
-
-
-    /* nelle successive linee viene riempita la struttura 'msg_T'.
+        /* nelle successive linee viene riempita la struttura 'msg_T'.
         ogni campo viene letto dal socket attraverso una read.
         il dato viene inserito in 'char *buff';
         la grandezza di buff viene allocata dinamicamente attraverso
@@ -190,9 +186,9 @@ void readAndLoadFromSocket(int sock, char *type) {
         per i messaggi di tipo MSG_LOGOUT & MSG_LIST il campo msg è vuoto */
 
 
-    msg_T->type = type[0];
+    msg_T->type = type;
 
-        // i 3 decimali devo leggerli lo stesso per consumare il socket
+
     for (forCounter = 0; forCounter < 2; forCounter++) {
 
         buffer = realloc(buffer, 3); // adesso può contenere 3 decimali
@@ -215,7 +211,6 @@ void readAndLoadFromSocket(int sock, char *type) {
 
     }
 
-
         // qua leggo len e msg
         // len lo facciamo un po più grande: 5 digit
     buffer = realloc(buffer, 5); // adesso può contenere 5 decimali
@@ -223,17 +218,13 @@ void readAndLoadFromSocket(int sock, char *type) {
     msg_T->msglen = atoi(buffer);
 
 
-    if(atoi(buffer) != 0) {
-        lenToAllocate = sizeof(char) * atoi(buffer);
+    if(msg_T->msglen != 0) {
+        lenToAllocate = sizeof(char) * msg_T->msglen;
         buffer = realloc(buffer, lenToAllocate); //adesso buff può contenere char * len
         read(sock, buffer, lenToAllocate); // leggo il campo successivo
-        printf("lenToAllocate---->%d\n", lenToAllocate);
         msg_T->msg = malloc(lenToAllocate);
         msg_T->msg = strdup(buffer);
     }
-
-    printf("laSAsASseesdfsdfsasdkjhkasjhdkajshdkjhaskdhjdfeeel\n");
-
         // ORA TUTTO IL MESSAGGIO È STATO MESSO DENTRO LA STRUTTURA
 
     printf("type: %c\n", msg_T->type);
@@ -241,6 +232,4 @@ void readAndLoadFromSocket(int sock, char *type) {
     printf("receiver: %s\n", msg_T->receiver);
     printf("msglen: %d\n", msg_T->msglen);
     printf("mesg: %s\n", msg_T->msg);
-
-    printf("laSAsASseesdfsdfsasdkjhkasjhdkajshdkjhaskdhjdfeeel\n");
 }

@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
                 */
                 buff = realloc(buff, buffSize);
 
-                sprintf(buff,"%c000000%05d%s:%s %s:%s", MSG_REGLOG,
+                sprintf(buff,"%c000000%05zu%s:%s %s:%s", MSG_REGLOG,
                                                     (strlen(argv[3])+strlen(name)+strlen(surname)+strlen(mail)) + 3,
                                                     argv[3], name, surname, mail);
 
@@ -180,7 +180,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr,"Failed to create threadReader");
             return -2;
         }
-/*        if (pthread_create(&threadListener, NULL, &launchThreadListener, (void *)&sockId)!= 0) {
+        /*if (pthread_create(&threadListener, NULL, &launchThreadListener, (void *)&sockId)!= 0) {
             buildLog("Failed to create threadListener", 1);
             return -3;
         }*/
