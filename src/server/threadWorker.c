@@ -36,10 +36,12 @@ typedef struct {
 
 
 char *buildMsgForSocket(int success);
-void readAndLoadFromSocket(msg_t *msg_T,int sock, char type);
+void readAndLoadFromSocket(msg_t *msg_T,int sock, int len, bool go);
 
 
 void *launchThreadWorker(void *newConn) {
+
+    bool go = true;
 
     //pthread_mutex_t mux = PTHREAD_MUTEX_INITIALIZER;
 
@@ -57,8 +59,6 @@ void *launchThreadWorker(void *newConn) {
 
     int success = 0;
 
-    bool go = true;
-
     msg_t *msg_T = malloc(sizeof(struct msg_t*));
 
     hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
@@ -72,9 +72,9 @@ void *launchThreadWorker(void *newConn) {
     // Viene ricevuto il messaggio e controllato quale servizio
     // viene richiesto
 
-    while(go && (read(sock, buff, sizeof(char)) > 0)) {
+    while(go && (read(sock, buff, sizeof(char) * 6) > 0)) {
 
-        readAndLoadFromSocket(msg_T, sock, buff[0]);
+        readAndLoadFromSocket(msg_T, sock, atoi(buff), go);
 
         // TODO //
         // In ogni caso il thread worker deve scrivere sul log file
@@ -103,7 +103,7 @@ void *launchThreadWorker(void *newConn) {
         // la send sottostante ha il compito di informare il client se
         // le operazioni richieste sono andate a buon fine o meno
         if(send(sock , tmpBuff , strlen(tmpBuff) , 0) < 0) {
-            buildLog("[!] Cannot send Info to the client!", 1);
+            buildLog("[!] Cannot send Infos to the client!", 1);
         }
 
 
@@ -111,8 +111,8 @@ void *launchThreadWorker(void *newConn) {
         // In questo ciclo inizia il while che consente lo scambio interattivo
         // di messaggi tra client e server. Viene eseguito solamente se il server
         // ha risposto affermativamente al comando iniziale inviato dal client
-        while (success == 0 && (read(sock, tmpBuff, sizeof(char)) > 0)) {
-            readAndLoadFromSocket(msg_T, sock, buff[0]);
+        while (success == 0 && (read(sock, tmpBuff, sizeof(char) * 6) > 0)) {
+            readAndLoadFromSocket(msg_T, sock, atoi(buff), go);
         }
 
 
@@ -131,7 +131,8 @@ char *buildMsgForSocket(int success) {
 
     /*
     success == -1 -> registrazione || login falliti ( username già presente nella table )
-    success == -2 -> login fallito
+    success == -2 -> login fallito ( utente non registrato )
+    success == -3 -> login fallito ( utente già loggato )
     */
 
     char *tmpBuff = malloc(sizeof(char));
@@ -158,20 +159,25 @@ char *buildMsgForSocket(int success) {
 
 }
 
-void readAndLoadFromSocket(msg_t *msg_T, int sock, char type) {
+void readAndLoadFromSocket(msg_t *msg_T, int sock, int len, bool go) {
 
-    int lenToAllocate;
-    char *buffer = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
+    int lenToAllocate = sizeof(char) * len;
+    char *buffer = malloc(lenToAllocate); // la dimensione iniziale è quella di un char
                                         // ovvero il primo token da leggere
+    char *tmpBuff = malloc(lenToAllocate);
+    char *strLen = malloc(sizeof(char));
+
     int forCounter;
+    int charsRead = 0;
 
 
         /* nelle successive linee viene riempita la struttura 'msg_T'.
-        ogni campo viene letto dal socket attraverso una read.
-        il dato viene inserito in 'char *buff';
-        la grandezza di buff viene allocata dinamicamente attraverso
-        la funzione 'realloc()'.
-        se necessario ( per i campi char * ), la grandezza dei componenti
+        Il messaggio che arriva nel socket ha le prime 6 cifre che indicano la
+        lunghezza dell'intero messaggio. Leggendo prima questa cifre e
+        successivamente l'intero messaggio la socket si svuota.
+        Agendo su variabili di tipo char* è possibile suddividere il
+        messaggio nei rispettivi campi e riempire la struct.
+        Se necessario ( per i campi char * ), la grandezza dei componenti
         della struttura viene allocata dinamicamente attraverso
         la funzione 'malloc()' */
 
@@ -185,51 +191,70 @@ void readAndLoadFromSocket(msg_t *msg_T, int sock, char type) {
         struttura è SEMPRE vuoto
         per i messaggi di tipo MSG_LOGOUT & MSG_LIST il campo msg è vuoto */
 
+    read(sock, buffer, lenToAllocate);
 
-    msg_T->type = type;
+    strncpy(tmpBuff, buffer, 1);
+    charsRead += 1;
+    msg_T->type = tmpBuff[0];
 
+    if (msg_T->type != MSG_LOGOUT) {
+        bzero(tmpBuff, 1);
 
-    for (forCounter = 0; forCounter < 2; forCounter++) {
+        for (forCounter = 0; forCounter < 2; forCounter++) {
 
-        buffer = realloc(buffer, 3); // adesso può contenere 3 decimali
-        read(sock, buffer, 3); // leggo da sock la lunghezza del prossimo campo
+            strLen = realloc(strLen, 3); // adesso può contenere 3 decimali
+            strncpy(strLen, buffer + charsRead, 3);
+            charsRead += 3;
 
-            // ANNOTAZIONE
-            // il sender non è mai presente
-        if (atoi(buffer) != 0) {
-            lenToAllocate = sizeof(char) * atoi(buffer);
-            buffer = realloc(buffer, lenToAllocate); //adesso buff può contenere char * len
-            read(sock, buffer, lenToAllocate); // leggo il campo successivo
-            if (forCounter == 0) {
-                msg_T->sender = malloc(lenToAllocate);
-                msg_T->sender = strdup(buffer);
-            } else {
-                msg_T->receiver = malloc(lenToAllocate);
-                msg_T->receiver = strdup(buffer);
+                // ANNOTAZIONE
+                // il sender non è mai presente
+            if (atoi(strLen) != 0) {
+                lenToAllocate = sizeof(char) * atoi(strLen);
+                tmpBuff = realloc(tmpBuff, lenToAllocate); //adesso buff può contenere char * len
+                strncpy(tmpBuff, buffer + charsRead, atoi(strLen));
+                charsRead += atoi(strLen);
+
+                if (forCounter == 0) {
+                    msg_T->sender = malloc(lenToAllocate);
+                    msg_T->sender = strdup(tmpBuff);
+                } else {
+                    msg_T->receiver = malloc(lenToAllocate);
+                    msg_T->receiver = strdup(tmpBuff);
+                }
             }
+            bzero(tmpBuff, lenToAllocate);
+
         }
 
+            // qua leggo len e msg
+            // len lo facciamo un po più grande: 5 digit
+        tmpBuff = realloc(tmpBuff, 5); // adesso può contenere 5 decimali
+        strncpy(tmpBuff, buffer + charsRead, 5);
+        charsRead += 5;
+        msg_T->msglen = atoi(tmpBuff);
+        bzero(tmpBuff, 5);
+
+
+        if(msg_T->msglen != 0) {
+            lenToAllocate = sizeof(char) * msg_T->msglen;
+            tmpBuff = realloc(tmpBuff, lenToAllocate); //adesso buff può contenere char * len
+            strncpy(tmpBuff, buffer + charsRead, msg_T->msglen);
+            printf("---->%s\n", tmpBuff);
+            msg_T->msg = malloc(lenToAllocate);
+            msg_T->msg = strdup(tmpBuff);
+        }
+
+        bzero(tmpBuff, lenToAllocate);
+            // ORA TUTTO IL MESSAGGIO È STATO MESSO DENTRO LA STRUTTURA
+
+        printf("type: %c\n", msg_T->type);
+        printf("sender: %s\n", msg_T->sender);
+        printf("receiver: %s\n", msg_T->receiver);
+        printf("msglen: %d\n", msg_T->msglen);
+        printf("mesg: %s\n", msg_T->msg);
+    } else {
+
+        go = false;
+
     }
-
-        // qua leggo len e msg
-        // len lo facciamo un po più grande: 5 digit
-    buffer = realloc(buffer, 5); // adesso può contenere 5 decimali
-    read(sock, buffer, 5); // leggo da sock la lunghezza del prossimo campo
-    msg_T->msglen = atoi(buffer);
-
-
-    if(msg_T->msglen != 0) {
-        lenToAllocate = sizeof(char) * msg_T->msglen;
-        buffer = realloc(buffer, lenToAllocate); //adesso buff può contenere char * len
-        read(sock, buffer, lenToAllocate); // leggo il campo successivo
-        msg_T->msg = malloc(lenToAllocate);
-        msg_T->msg = strdup(buffer);
-    }
-        // ORA TUTTO IL MESSAGGIO È STATO MESSO DENTRO LA STRUTTURA
-
-    printf("type: %c\n", msg_T->type);
-    printf("sender: %s\n", msg_T->sender);
-    printf("receiver: %s\n", msg_T->receiver);
-    printf("msglen: %d\n", msg_T->msglen);
-    printf("mesg: %s\n", msg_T->msg);
 }

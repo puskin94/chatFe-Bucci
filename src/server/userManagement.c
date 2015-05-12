@@ -138,8 +138,5 @@ char *listUser(char *buff, hdata_t *online) {
         printf("lelz\n");
     }
 
-/*    tmpBuff = realloc(tmpBuff, sizeof(char) * 61);
-    sprintf(tmpBuff,"%c057Error during Registration... ( username already taken ? )", MSG_LIST);
-*/
     return "leeel";
 }

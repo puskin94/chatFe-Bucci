@@ -102,9 +102,10 @@ int main(int argc, char *argv[]) {
 
             if (sscanf(argv[2], "%s %s %s", name, surname, mail ) == 3) {
 
-                buffSize = 15+strlen(argv[3])+strlen(name)+strlen(surname)+strlen(mail);
+                buffSize = 21+strlen(argv[3])+strlen(name)+strlen(surname)+strlen(mail);
                 /*
-                15 ==
+                21 ==
+                    6 = dimensione dell'intero messaggio
                     1 = type
                     6 = 000000
                     5 = msglen
@@ -112,7 +113,7 @@ int main(int argc, char *argv[]) {
                 */
                 buff = realloc(buff, buffSize);
 
-                sprintf(buff,"%c000000%05zu%s:%s %s:%s", MSG_REGLOG,
+                sprintf(buff,"%06d%c000000%05zu%s:%s %s:%s", buffSize, MSG_REGLOG,
                                                     (strlen(argv[3])+strlen(name)+strlen(surname)+strlen(mail)) + 3,
                                                     argv[3], name, surname, mail);
 
@@ -128,16 +129,17 @@ int main(int argc, char *argv[]) {
         } else if (argc == 2) {
             // ultimo caso: se è presente un solo parametro, deve essere per forza il login
             lenMsg = strlen(argv[1]);
-            buffSize = 12+lenMsg;
+            buffSize = 18 + lenMsg;
             /*
-            12 ==
+            18 ==
+                6 = dimensione dell'intero messaggio
                 1 = type
                 6 = 000000
                 5 = msglen
             */
             buff = realloc(buff, buffSize);
 
-            sprintf(buff,"%c000000%05d%s", MSG_LOGIN, lenMsg, argv[1]);
+            sprintf(buff,"%06d%c000000%05d%s", buffSize, MSG_LOGIN, lenMsg, argv[1]);
 
             if(send(sockId , buff , buffSize , 0) < 0) {
                 printf("[!] Cannot send login request to the server!\n");

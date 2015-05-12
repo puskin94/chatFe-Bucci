@@ -24,28 +24,24 @@ void *launchThreadReader(void *newConn) {
 
     int sock = *(int*)newConn;
     char *msgToSend = malloc(sizeof(char));
-    char *msg = malloc(sizeof(char));
     char *cmd;
     char *msgTo;
     char *msgText;
-    char ch;
+
     int numChars;
+    char *msg = NULL;
+    size_t msgLen = 0;
+    ssize_t lenRead;
 
-    do {
-        // il buffer da inviare viene allocato dinamicamente ogni volta
-        // che viene premuto un tasto sulla tastiera: Questo metodo ammazza
-        // letteralmente le performances del singolo thread ma il numero
-        // di bytes inviati al server ne beneficia.
-        numChars = 1;
-        bzero(msg, sizeof(char) * numChars);
 
-        while((ch = getchar()) != '\n') {
-            numChars++;
-            if (numChars % 10 == 0) {
-                msg = realloc(msg, sizeof(char) * numChars + 10);
-            }
-            strncat(msg, &ch, 1);
-        }
+    /* la dimensione del messaggio viene allocata dinamicamente con la funzione getline.
+        nella versione precedente del code, la dimensione era incrementata
+        ogni volta che veniva premuto un tasto. Questo rendeva la quantità
+        di realloc veramente alta ammazzando le performances del client.
+    */
+    while(((lenRead = getline(&msg, &msgLen, stdin)) != -1 )) {
+
+        msg[strcspn(msg, "\n")] = 0;
 
         if (msg[0] == '#') {
             // se si tratta di un messaggio '#dest'
@@ -55,31 +51,20 @@ void *launchThreadReader(void *newConn) {
                 msgText = strdup(strtok(NULL, ":"));
                 // faccio la distinzione tra privato e broadcast
                 if (cmd[5] == ' ') {
-                    msgTo = strdup(strtok(cmd, " ")); strdup(msgTo = strtok(NULL, " "));
-                    numChars = (12 + strlen(msgTo) + strlen(msgText));
+                    msgTo = strdup(strtok(cmd, " ")); msgTo = strdup(strtok(NULL, " "));
+                    numChars = (18 + strlen(msgTo) + strlen(msgText));
                     msgToSend = realloc(msgToSend, numChars * sizeof(char));
-                    sprintf(msgToSend, "%c000%03zu%s%05zu%s", MSG_SINGLE, strlen(msgTo), msgTo, strlen(msgText), msgText);
+                    sprintf(msgToSend, "%06d%c000%03zu%s%05zu%s", numChars, MSG_SINGLE, strlen(msgTo), msgTo, strlen(msgText), msgText);
                 } else {
-                    printf("figata, broadcast\n");
+                    numChars = (18 + strlen(msgTo) + strlen(msgText));
+                    msgToSend = realloc(msgToSend, numChars * sizeof(char));
+                    sprintf(msgToSend, "%06d%c000000%05zu%s", numChars, MSG_BRDCAST, strlen(msgText), msgText);
                 }
+            } else if (strncmp(msg, "#logout", 7) == 0) {
+                    numChars = 18;
+                    msgToSend = realloc(msgToSend, numChars * sizeof(char));
+                    sprintf(msgToSend, "%06d%c00000000000", numChars, MSG_LOGOUT);
             }
-/*            cmd = strtok(msg, ":");
-            msgText = strtok(NULL, ":");
-            printf("msg----->%s\n", msgText);
-            // sono presenti i : sse il messaggio è di tipo '#dest'
-            // quindi l' if statement successivo viene eseguito solamente
-            // in quel caso
-            if (cmd != NULL) {
-                printf("è un messaggio\n");
-                if (strncmp(cmd, "#dest", 5) == 0) {
-                    msgTo = strtok(cmd, " ");
-                    msgTo = strtok(NULL, " ");
-                    printf("privato verso %s: %s\n", msgTo, msg);
-                } else if (strncmp(cmd, "#dest", 5) == 0) {
-                    printf("broadcast\n");
-                }
-            }
-*/
 
             printf("%s\n", msgToSend);
 
@@ -88,9 +73,8 @@ void *launchThreadReader(void *newConn) {
             }
         }
 
-
-    } while(strncmp(msgToSend, "#logout", 7) != 0);
-
+    }
+    free(msg);
     close(sock);
     pthread_exit(NULL);
 }
