@@ -72,7 +72,7 @@ void *launchThreadMain(void *arg) {
     sockId = socket(AF_INET, SOCK_STREAM, 0);
 
     if (bind(sockId, (struct sockaddr *)&server, sizeof(server)) < 0) {
-        buildLog("Cannot bind on port",1);
+        buildLog("Cannot bind on port", 1);
     } else {
 
         listen(sockId, SOMAXCONN);

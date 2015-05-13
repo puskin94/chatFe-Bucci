@@ -55,18 +55,11 @@ void *launchThreadWorker(void *newConn) {
 
     int sock = *(int*)newConn;
 
-    char logMsg[256];
-
     int success = 0;
 
     msg_t *msg_T = malloc(sizeof(struct msg_t*));
 
     hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
-
-    // 'pulisco' il buffer
-    // 'pulisco' l'array dei log
-    bzero(buff, sizeof(char));
-    bzero(logMsg, 256);
 
 
     // Viene ricevuto il messaggio e controllato quale servizio
@@ -107,16 +100,16 @@ void *launchThreadWorker(void *newConn) {
         }
 
 
-        tmpBuff = realloc(tmpBuff, sizeof(char));
+        buff = realloc(buff, sizeof(char));
+        bzero(buff, sizeof(char));
         // In questo ciclo inizia il while che consente lo scambio interattivo
         // di messaggi tra client e server. Viene eseguito solamente se il server
         // ha risposto affermativamente al comando iniziale inviato dal client
-        while (success == 0 && (read(sock, tmpBuff, sizeof(char) * 6) > 0)) {
+        while (success == 0 && (read(sock, buff, sizeof(char) * 6) > 0)) {
             readAndLoadFromSocket(msg_T, sock, atoi(buff), go);
         }
-
-
     }
+    free(tmpBuff); free(buff);
     close(sock);
     pthread_exit(NULL);
 }
@@ -239,7 +232,6 @@ void readAndLoadFromSocket(msg_t *msg_T, int sock, int len, bool go) {
             lenToAllocate = sizeof(char) * msg_T->msglen;
             tmpBuff = realloc(tmpBuff, lenToAllocate); //adesso buff può contenere char * len
             strncpy(tmpBuff, buffer + charsRead, msg_T->msglen);
-            printf("---->%s\n", tmpBuff);
             msg_T->msg = malloc(lenToAllocate);
             msg_T->msg = strdup(tmpBuff);
         }
@@ -252,6 +244,7 @@ void readAndLoadFromSocket(msg_t *msg_T, int sock, int len, bool go) {
         printf("receiver: %s\n", msg_T->receiver);
         printf("msglen: %d\n", msg_T->msglen);
         printf("mesg: %s\n", msg_T->msg);
+
     } else {
 
         go = false;

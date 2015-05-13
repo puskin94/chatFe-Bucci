@@ -44,21 +44,30 @@ void *launchThreadReader(void *newConn) {
         msg[strcspn(msg, "\n")] = 0;
 
         if (msg[0] == '#') {
-            // se si tratta di un messaggio '#dest'
+            /* se si tratta di un messaggio '#dest'
+            l'interno di questo costrutto costruisce il messaggio e lo spedisce al
+            server. A lui il compito di smistarlo al destinatario */
             if (strncmp(msg, "#dest", 5) == 0) {
 
                 cmd = strtok(msg, ":");
                 msgText = strdup(strtok(NULL, ":"));
-                // faccio la distinzione tra privato e broadcast
+
+                // se il messaggio è privato
                 if (cmd[5] == ' ') {
                     msgTo = strdup(strtok(cmd, " ")); msgTo = strdup(strtok(NULL, " "));
                     numChars = (18 + strlen(msgTo) + strlen(msgText));
                     msgToSend = realloc(msgToSend, numChars * sizeof(char));
-                    sprintf(msgToSend, "%06d%c000%03zu%s%05zu%s", numChars, MSG_SINGLE, strlen(msgTo), msgTo, strlen(msgText), msgText);
+
+                    sprintf(msgToSend, "%06d%c000%03zu%s%05zu%s", numChars,
+                        MSG_SINGLE, strlen(msgTo), msgTo, strlen(msgText), msgText);
+
                 } else {
-                    numChars = (18 + strlen(msgTo) + strlen(msgText));
+                    // se il messaggio è di tipo broadcast
+                    numChars = (18 + strlen(msgText));
                     msgToSend = realloc(msgToSend, numChars * sizeof(char));
-                    sprintf(msgToSend, "%06d%c000000%05zu%s", numChars, MSG_BRDCAST, strlen(msgText), msgText);
+
+                    sprintf(msgToSend, "%06d%c000000%05zu%s", numChars,
+                        MSG_BRDCAST, strlen(msgText), msgText);
                 }
             } else if (strncmp(msg, "#logout", 7) == 0) {
                     numChars = 18;
@@ -66,15 +75,13 @@ void *launchThreadReader(void *newConn) {
                     sprintf(msgToSend, "%06d%c00000000000", numChars, MSG_LOGOUT);
             }
 
-            printf("%s\n", msgToSend);
-
             if(send(sock , msgToSend , numChars , 0) < 0) {
                 fprintf(stderr,"Cannot send the message to the server\n");
             }
         }
 
     }
-    free(msg);
+    free(msg); free(msgToSend);
     close(sock);
     pthread_exit(NULL);
 }
