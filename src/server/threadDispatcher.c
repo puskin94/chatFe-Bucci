@@ -12,9 +12,10 @@
 #include <signal.h>
 
 
+#include "include/chat-server.h"
 #include "include/utils.h"
-
-
+#include "include/hash.h"
+#include "include/userManagement.h"
 
 #define MSG_LOGIN 'L'
 #define MSG_REGLOG 'R'
@@ -35,18 +36,10 @@ typedef struct {
 } msg_t;
 
 
-bool go = true;
+void *launchThreadDispatcher(void *newConn) {
 
-
-void *launchThreadListener(void *newConn) {
     int sock = *(int*)newConn;
-    char *buffer = malloc(sizeof(char));
+    printf("[Dispatcher] Sono connesso al socket n°%d\n", sock);
 
-    while(go && (read(sock, buffer, sizeof(char) * 6) > 0)) {
-
-
-    }
-
-
-
+    pthread_exit(NULL);
 }

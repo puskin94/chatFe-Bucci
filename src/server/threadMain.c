@@ -16,15 +16,21 @@
 #include "include/hash.h"
 #include "include/threadWorker.h"
 #include "include/userManagement.h"
+#include "include/threadMain.h"
 
 #define PORT 7778
 
-bool readUserFile();
-void sighand(int sig);
+
+// variabile di tipo sig_atomic , necessaria per il signal handler
+// è di tipo "atomico" perchè stiamo lavorando con i thread
+sig_atomic_t go;
+
+struct sigaction sigHandling;
+sigHandling.sa_handler = sighand;
 
 
-bool go = true;
 int sockId;
+int numThreadAttivi = 0;
 
 
 void *launchThreadMain(void *arg) {
@@ -35,6 +41,8 @@ void *launchThreadMain(void *arg) {
     struct sockaddr_in server;
     struct sockaddr_in client;
 
+    go = false;
+
     // generazione del threadWorker
     pthread_t threadWorker;
     pthread_attr_t attr;
@@ -43,8 +51,8 @@ void *launchThreadMain(void *arg) {
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-    signal(SIGINT, sighand);
-    signal(SIGTERM, sighand);
+    sigaction(SIGINT, &sigHandling, 0);
+    sigaction(SIGTERM, &sigHandling, 0);
 
 
     // read user-file
@@ -96,8 +104,7 @@ void *launchThreadMain(void *arg) {
 
     }
     close(sockId);
-    return NULL;
-
+    pthread_exit(NULL);
 }
 
 

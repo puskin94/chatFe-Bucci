@@ -15,6 +15,7 @@
 #include "include/utils.h"
 #include "include/hash.h"
 #include "include/userManagement.h"
+#include "include/threadDispatcher.h"
 
 #define MSG_LOGIN 'L'
 #define MSG_REGLOG 'R'
@@ -41,6 +42,10 @@ void readAndLoadFromSocket(msg_t *msg_T,int sock, int len, bool go);
 
 void *launchThreadWorker(void *newConn) {
 
+
+    // inizializzo il thread dispatcher
+    pthread_t threadDispatcher;
+
     bool go = true;
 
     //pthread_mutex_t mux = PTHREAD_MUTEX_INITIALIZER;
@@ -56,6 +61,11 @@ void *launchThreadWorker(void *newConn) {
     int sock = *(int*)newConn;
 
     int success = 0;
+
+    // creo il thread dispatcher
+    if(pthread_create(&threadDispatcher, NULL, &launchThreadDispatcher, (void *)&newConn) != 0) {
+        buildLog("Failed to create threadDispatcher", 1);
+    }
 
     msg_t *msg_T = malloc(sizeof(struct msg_t*));
 
@@ -107,8 +117,17 @@ void *launchThreadWorker(void *newConn) {
         // ha risposto affermativamente al comando iniziale inviato dal client
         while (success == 0 && (read(sock, buff, sizeof(char) * 6) > 0)) {
             readAndLoadFromSocket(msg_T, sock, atoi(buff), go);
+
+            if (msg_T->type == MSG_LIST) {
+                printf("leeeeeel\n");
+                listUser();
+            } else if (msg_T->type == MSG_BRDCAST || msg_T->type == MSG_SINGLE) {
+
+            }
         }
     }
+    pthread_join(threadDispatcher, NULL);
+
     free(tmpBuff); free(buff);
     close(sock);
     pthread_exit(NULL);
@@ -243,7 +262,7 @@ void readAndLoadFromSocket(msg_t *msg_T, int sock, int len, bool go) {
         printf("sender: %s\n", msg_T->sender);
         printf("receiver: %s\n", msg_T->receiver);
         printf("msglen: %d\n", msg_T->msglen);
-        printf("mesg: %s\n", msg_T->msg);
+        printf("mesg: %s\n\n", msg_T->msg);
 
     } else {
 

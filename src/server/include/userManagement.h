@@ -9,6 +9,6 @@
 bool readUserFile();
 bool registerNewUser(char *msg, hdata_t *user);
 int loginUser(char *user, hdata_t *bs, int sock);
-char *listUser(char *buff, hdata_t *online);
+void listUser();
 
 #endif

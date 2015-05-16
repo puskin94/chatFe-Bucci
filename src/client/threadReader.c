@@ -70,11 +70,16 @@ void *launchThreadReader(void *newConn) {
                         MSG_BRDCAST, strlen(msgText), msgText);
                 }
             } else if (strncmp(msg, "#logout", 7) == 0) {
-                    numChars = 18;
-                    msgToSend = realloc(msgToSend, numChars * sizeof(char));
-                    sprintf(msgToSend, "%06d%c00000000000", numChars, MSG_LOGOUT);
+                numChars = 18;
+                msgToSend = realloc(msgToSend, numChars * sizeof(char));
+                sprintf(msgToSend, "%06d%c00000000000", numChars, MSG_LOGOUT);
+            } else if (strncmp(msg, "#list", 5) == 0) {
+                numChars = 18;
+                msgToSend = realloc(msgToSend, numChars * sizeof(char));
+                sprintf(msgToSend, "%06d%c00000000000", numChars, MSG_LIST);
             }
 
+            printf("%s\n", msgToSend);
             if(send(sock , msgToSend , numChars , 0) < 0) {
                 fprintf(stderr,"Cannot send the message to the server\n");
             }

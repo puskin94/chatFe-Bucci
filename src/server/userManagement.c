@@ -19,6 +19,7 @@
 
 
 static hash_t HASH_TABLE;
+static lista OnUser;
 
 /* la funzione sottostante consente di caricare tutti i dati necessari
 alla gestione degli utenti nella tabella hash */
@@ -116,27 +117,16 @@ int loginUser(char *user, hdata_t *bs, int sock) {
 
 // questa funzione non funziona
 
-char *listUser(char *buff, hdata_t *online) {
-    printf("lsakjdlkasjd\n");
+void listUser() {
+    printf("lkasjdlkajsdlj\n");
+    posizione el = PRIMOLISTA(OnUser);
+    printf("sono dentro\n");
 
-    lista L;
-    char *test;
-    L = (lista) malloc(sizeof(struct cella));
-    printf("lsakjdlkasjd\n");
-    L = PRIMOLISTA(L);
-    printf("lsakjdlkasjd\n");
+    while (PREDLISTA(el) != ULTIMOLISTA(OnUser)) {
 
-    // se la lista non è vuota
-    if (LISTAVUOTA(L) == 1) {
-        printf("lulz\n");
-        while(SUCCLISTA(L) != NULL) {
-            test = strdup(L->elemento);
-            printf("--->%s\n", test);
-            L = SUCCLISTA(L);
-        }
-    } else {
-        printf("lelz\n");
+        printf("elemento: %s\n", (char *)el->elemento);
+        el = SUCCLISTA(el);
     }
+    printf("soono fuori\n");
 
-    return "leeel";
 }
