@@ -14,6 +14,7 @@
 #include "include/chat-server.h"
 #include "include/utils.h"
 #include "include/hash.h"
+#include "include/threadMain.h"
 #include "include/userManagement.h"
 #include "include/threadDispatcher.h"
 

@@ -25,9 +25,6 @@
 // è di tipo "atomico" perchè stiamo lavorando con i thread
 sig_atomic_t go;
 
-struct sigaction sigHandling;
-sigHandling.sa_handler = sighand;
-
 
 int sockId;
 int numThreadAttivi = 0;
@@ -41,7 +38,7 @@ void *launchThreadMain(void *arg) {
     struct sockaddr_in server;
     struct sockaddr_in client;
 
-    go = false;
+    go = true;
 
     // generazione del threadWorker
     pthread_t threadWorker;
@@ -50,9 +47,6 @@ void *launchThreadMain(void *arg) {
     // aggiunta dell'attributo 'detached'
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-
-    sigaction(SIGINT, &sigHandling, 0);
-    sigaction(SIGTERM, &sigHandling, 0);
 
 
     // read user-file
@@ -89,7 +83,6 @@ void *launchThreadMain(void *arg) {
 
         while (go) {
             newConn = accept(sockId, (struct sockaddr *)&client, (socklen_t *)&len);
-
             if(newConn == -1) {
                 buildLog("[!] Cannot accept new connections", 1);
             } else {
@@ -101,16 +94,7 @@ void *launchThreadMain(void *arg) {
             }
         }
         close(newConn);
-
     }
     close(sockId);
     pthread_exit(NULL);
-}
-
-
-void sighand(int sig) {
-    if ( sig == SIGINT || sig == SIGTERM ) {
-        buildLog("CTRL-C Received. Quitting", 1);
-        go = false;
-    }
 }

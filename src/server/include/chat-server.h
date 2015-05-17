@@ -7,4 +7,6 @@
 extern char *userFile;
 extern char *logFile;
 
+void sighand(int sig);
+
 #endif

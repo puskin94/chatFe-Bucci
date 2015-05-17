@@ -8,6 +8,5 @@ extern sig_atomic_t go;
 
 void *launchThreadMain(void *arg);
 bool readUserFile();
-void sighand(int sig);
 
 #endif

@@ -6,6 +6,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "include/chat-server.h"
 #include "include/utils.h"
@@ -13,12 +14,9 @@
 #include "include/threadMain.h"
 
 
-/* TODO LIST
+struct sigaction sigHandling;
 
-readUserFile: implementare l'inserimento nella lista
-
-*/
-
+sig_atomic_t go;
 
 char *userFile;
 char *logFile;
@@ -28,7 +26,11 @@ int main(int argc, char *argv[]) {
 
     pthread_t threadMain;
 
+    sigHandling.sa_handler = sighand;
+
     int pid;
+
+    go = true;
 
     // controllo sul necessario numero di parametri
     if (argc != 3) {
@@ -51,6 +53,15 @@ int main(int argc, char *argv[]) {
             return -5;
         }
 
+        if (sigaction(SIGINT, &sigHandling, 0) < 0) {
+            buildLog("Error in signal Handling ( SIGINT )", 0);
+        }
+
+        if (sigaction(SIGTERM, &sigHandling, 0) < 0) {
+            buildLog("Error in signal Handling ( SIGTERM )", 0);
+        }
+
+
         pthread_join(threadMain, NULL);
 
     } else if (pid < 0) {
@@ -58,4 +69,13 @@ int main(int argc, char *argv[]) {
     }
 
     return 0;
+}
+
+void sighand(int sig) {
+    if ( sig == SIGINT || sig == SIGTERM ) {
+        buildLog("CTRL-C Received. Quitting", 1);
+        printf("go vale %d\n", go);
+        go = false;
+        printf("ora go vale %d\n", go);
+    }
 }
