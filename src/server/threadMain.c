@@ -17,12 +17,11 @@
 #include "include/threadWorker.h"
 #include "include/userManagement.h"
 #include "include/threadMain.h"
+#include "include/threadDispatcher.h"
 
 #define PORT 7778
 
 
-// variabile di tipo sig_atomic , necessaria per il signal handler
-// è di tipo "atomico" perchè stiamo lavorando con i thread
 sig_atomic_t go;
 
 
@@ -42,6 +41,7 @@ void *launchThreadMain(void *arg) {
 
     // generazione del threadWorker
     pthread_t threadWorker;
+    pthread_t threadDispatcher;
     pthread_attr_t attr;
 
     // aggiunta dell'attributo 'detached'
@@ -81,6 +81,11 @@ void *launchThreadMain(void *arg) {
 
         len = sizeof(struct sockaddr_in);
 
+        // creo il thread dispatcher
+        if(pthread_create(&threadDispatcher, NULL, &launchThreadDispatcher, NULL) != 0) {
+            buildLog("Failed to create threadDispatcher", 1);
+        }
+
         while (go) {
             newConn = accept(sockId, (struct sockaddr *)&client, (socklen_t *)&len);
             if(newConn == -1) {
@@ -93,6 +98,7 @@ void *launchThreadMain(void *arg) {
                 }
             }
         }
+        pthread_join(threadDispatcher, NULL);
         close(newConn);
     }
     close(sockId);

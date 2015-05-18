@@ -92,3 +92,17 @@ bool createLogFile() {
         return false;
     }
 }
+
+void saveTable() {
+
+    FILE *fp;
+    hdata_t *user;
+
+    fp = fopen(userFile, "w");
+    if (fp != NULL) {
+        user = (hdata_t *) malloc(sizeof(hdata_t));
+        fprintf(fp, "%s:%s:%s\n", user->uname, user->fullname, user->email);
+    }
+    fclose(fp);
+
+}

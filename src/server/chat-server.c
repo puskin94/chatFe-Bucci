@@ -14,23 +14,26 @@
 #include "include/threadMain.h"
 
 
-struct sigaction sigHandling;
-
+// variabile di tipo sig_atomic , necessaria per il signal handler
+// è di tipo "atomico" perchè stiamo lavorando con i thread
 sig_atomic_t go;
 
 char *userFile;
 char *logFile;
+
+void sighand(int sig);
 
 
 int main(int argc, char *argv[]) {
 
     pthread_t threadMain;
 
-    sigHandling.sa_handler = sighand;
-
+    go = true;
     int pid;
 
-    go = true;
+    struct sigaction sigHandling;
+    sigHandling.sa_handler = sighand;
+
 
     // controllo sul necessario numero di parametri
     if (argc != 3) {
@@ -77,5 +80,8 @@ void sighand(int sig) {
         printf("go vale %d\n", go);
         go = false;
         printf("ora go vale %d\n", go);
+
+
+        //saveTable();
     }
 }

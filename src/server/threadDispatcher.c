@@ -36,10 +36,8 @@ typedef struct {
 } msg_t;
 
 
-void *launchThreadDispatcher(void *newConn) {
+void *launchThreadDispatcher() {
 
-    int sock = *(int*)newConn;
-    printf("[Dispatcher] Sono connesso al socket n°%d\n", sock);
 
     pthread_exit(NULL);
 }

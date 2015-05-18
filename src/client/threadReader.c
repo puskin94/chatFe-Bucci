@@ -73,7 +73,7 @@ void *launchThreadReader(void *newConn) {
                 numChars = 18;
                 msgToSend = realloc(msgToSend, numChars * sizeof(char));
                 sprintf(msgToSend, "%06d%c00000000000", numChars, MSG_LOGOUT);
-            } else if (strncmp(msg, "#list", 5) == 0) {
+            } else if (strncmp(msg, "#ls", 3) == 0) {
                 numChars = 18;
                 msgToSend = realloc(msgToSend, numChars * sizeof(char));
                 sprintf(msgToSend, "%06d%c00000000000", numChars, MSG_LIST);

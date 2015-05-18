@@ -39,6 +39,7 @@ bool readUserFile() {
     if (fp != NULL) {
 
         HASH_TABLE = CREAHASH();
+        OnUser = CREALISTA();
 
         while (fgets (userInfo, sizeof(userInfo), fp)) {
 
@@ -100,12 +101,17 @@ int loginUser(char *user, hdata_t *bs, int sock) {
     // se l'utente è presente ma è già loggato, ritorna -3
     char msg[100];
     bs = CERCAHASH(user, HASH_TABLE);
+    posizione lastElem = ULTIMOLISTA(OnUser);
     if (bs == NULL) {
         buildLog("Username not Found", 0);
         printf("ritorno -2\n");
         return -2;
     } else if (bs->sockid == -1) {
+        // modifico il sockid nella hashtable
         bs->sockid = sock;
+        // ed inserisco l'utente nella lista
+        INSLISTA(user, &lastElem);
+
         strcpy(msg, user);
         strcat(msg, " has logged");
         buildLog(msg, 0);
@@ -117,16 +123,17 @@ int loginUser(char *user, hdata_t *bs, int sock) {
 
 // questa funzione non funziona
 
-void listUser() {
-    printf("lkasjdlkajsdlj\n");
+char *listUser() {
     posizione el = PRIMOLISTA(OnUser);
-    printf("sono dentro\n");
+    char *tmpBuff = malloc(sizeof(char));
 
     while (PREDLISTA(el) != ULTIMOLISTA(OnUser)) {
-
-        printf("elemento: %s\n", (char *)el->elemento);
+        tmpBuff = realloc(tmpBuff, (strlen(tmpBuff) + strlen(el->elemento)) * sizeof(char));
+        strcat(tmpBuff, el->elemento);
+        strcat(tmpBuff, ":");
         el = SUCCLISTA(el);
     }
-    printf("soono fuori\n");
+    strncpy(tmpBuff, tmpBuff, strlen(tmpBuff) - 1);
 
+    return tmpBuff;
 }

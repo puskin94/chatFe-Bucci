@@ -45,7 +45,7 @@ void *launchThreadWorker(void *newConn) {
 
 
     // inizializzo il thread dispatcher
-    pthread_t threadDispatcher;
+
 
     bool go = true;
 
@@ -63,10 +63,6 @@ void *launchThreadWorker(void *newConn) {
 
     int success = 0;
 
-    // creo il thread dispatcher
-    if(pthread_create(&threadDispatcher, NULL, &launchThreadDispatcher, (void *)&newConn) != 0) {
-        buildLog("Failed to create threadDispatcher", 1);
-    }
 
     msg_t *msg_T = malloc(sizeof(struct msg_t*));
 
@@ -120,14 +116,13 @@ void *launchThreadWorker(void *newConn) {
             readAndLoadFromSocket(msg_T, sock, atoi(buff), go);
 
             if (msg_T->type == MSG_LIST) {
-                printf("leeeeeel\n");
-                listUser();
+                tmpBuff = listUser();
+                printf("%s\n", tmpBuff);
             } else if (msg_T->type == MSG_BRDCAST || msg_T->type == MSG_SINGLE) {
 
             }
         }
     }
-    pthread_join(threadDispatcher, NULL);
 
     free(tmpBuff); free(buff);
     close(sock);
