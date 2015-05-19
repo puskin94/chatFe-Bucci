@@ -98,6 +98,7 @@ void *launchThreadMain(void *arg) {
                 }
             }
         }
+
         pthread_join(threadDispatcher, NULL);
         close(newConn);
     }

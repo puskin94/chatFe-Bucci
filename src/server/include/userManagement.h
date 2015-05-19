@@ -8,8 +8,9 @@
 
 bool readUserFile();
 bool registerNewUser(char *msg, hdata_t *user);
-int loginUser(char *user, hdata_t *bs, int sock);
-char *listUser();
 bool isInTable(char *user);
+int loginUser(char *user, hdata_t *bs, int sock);
+int returnSockId(char *user, hdata_t *bs);
+char *listUser();
 
 #endif

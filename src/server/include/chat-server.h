@@ -11,7 +11,6 @@
 extern char *userFile;
 extern char *logFile;
 extern sig_atomic_t go;
-extern char *bufferPC[];
 
 void sighand(int sig);
 

@@ -39,7 +39,7 @@ typedef struct {
 
 char *buildMsgForSocket(int success);
 void readAndLoadFromSocket(msg_t *msg_T,int sock, int len, bool go);
-char *msgForDispatcher(msg_t *msg_T);
+char *msgForDispatcher(msg_t *msg_T, char *sender);
 
 char *bufferPC[K];
 bool isLogout = false;
@@ -48,12 +48,12 @@ bool isLogout = false;
 void *launchThreadWorker(void *newConn) {
 
 
-    int writePos = 0, success = 0;
+    int success = 0;
     int sock = *(int*)newConn;
 
     bool go = true;
 
-    //pthread_mutex_t mux = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mux = PTHREAD_MUTEX_INITIALIZER;
 
     char *buff = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
                                         // ovvero il primo token da leggere
@@ -61,7 +61,6 @@ void *launchThreadWorker(void *newConn) {
     // la variabile 'userName' verrà riempita dopo la registrazione con
     // il nome dell'utente che dovrà effettuare il login
     char *tmpBuff, *userName;
-
 
 
     msg_t *msg_T = malloc(sizeof(struct msg_t*));
@@ -122,11 +121,14 @@ void *launchThreadWorker(void *newConn) {
                 }
             } else if (msg_T->type == MSG_BRDCAST || msg_T->type == MSG_SINGLE) {
                 // tmpBuff conterrà il messaggio da spedire al threadDispatcher
-                tmpBuff = msgForDispatcher(msg_T);
-                // il buffer viene gestito circolarmente
-                writePos = (writePos + 1) % K;
-                // viene copiato il messaggio dentro bufferPC
-                bufferPC[writePos] = strdup(tmpBuff);
+                tmpBuff = msgForDispatcher(msg_T, userName);
+
+                if (tmpBuff[0] != MSG_ERROR) {
+                    pthread_mutex_lock(&mux);
+                    // viene copiato il messaggio dentro bufferPC
+                    writeOnBufferPC(tmpBuff);
+                    pthread_mutex_unlock(&mux);
+                }
             }
         }
     }
@@ -136,7 +138,7 @@ void *launchThreadWorker(void *newConn) {
     pthread_exit(NULL);
 }
 
-char *msgForDispatcher(msg_t *msg_T) {
+char *msgForDispatcher(msg_t *msg_T, char *sender) {
     char *tmpBuff = malloc(sizeof(char));
 
     // crea il messaggio solamente se il destinatario è registrato
@@ -148,26 +150,25 @@ char *msgForDispatcher(msg_t *msg_T) {
             <lunghezza di tutto il messaggio><tipo><lunghezza del receiver>
             <receiver><lunghezza del messaggio><messaggio>
             */
-            tmpBuff = malloc((15 + strlen(msg_T->receiver) + msg_T->msglen) * sizeof(char));
-            sprintf(tmpBuff, "%06d%c%03zu%s%05d%s", 15 + strlen(msg_T->receiver) + msg_T->msglen,
-                                                msg_T->type,
-                                                strlen(msg_T->receiver),
-                                                msg_T->receiver,
-                                                msg_T->msglen,
-                                                msg_T->msg);
+            tmpBuff = malloc((12 + strlen(msg_T->receiver) + strlen(sender) + msg_T->msglen) * sizeof(char));
+            sprintf(tmpBuff, "%c%03zu%s%03zu%s%05d%s", msg_T->type,
+                                                        strlen(msg_T->receiver),
+                                                        msg_T->receiver,
+                                                        strlen(sender),
+                                                        sender,
+                                                        msg_T->msglen,
+                                                        msg_T->msg);
         } else {
-            // 257 -> Numero non gestibile, il massimo è 256
-            // Il dispatcher riconosce l'errore
-            tmpBuff = malloc(3 * sizeof(char));
-            strncpy(tmpBuff, "257", 3);
+            sprintf(tmpBuff, "%c", MSG_ERROR);
         }
     } else {
         // se il messaggio è di tipo MSG_BRDCAST
-        tmpBuff = malloc((12 + msg_T->msglen) * sizeof(char));
-        sprintf(tmpBuff, "%06d%c%05d%s", 12 + msg_T->msglen,
-                                                msg_T->type,
-                                                msg_T->msglen,
-                                                msg_T->msg);
+        tmpBuff = malloc((9 + msg_T->msglen + strlen(sender)) * sizeof(char));
+        sprintf(tmpBuff, "%c%03zu%s%05d%s", msg_T->type,
+                                            strlen(sender),
+                                            sender,
+                                            msg_T->msglen,
+                                            msg_T->msg);
     }
     return tmpBuff;
 }
@@ -295,11 +296,11 @@ void readAndLoadFromSocket(msg_t *msg_T, int sock, int len, bool go) {
         bzero(tmpBuff, lenToAllocate);
             // ORA TUTTO IL MESSAGGIO È STATO MESSO DENTRO LA STRUTTURA
 
-        printf("type: %c\n", msg_T->type);
+/*        printf("type: %c\n", msg_T->type);
         printf("sender: %s\n", msg_T->sender);
         printf("receiver: %s\n", msg_T->receiver);
         printf("msglen: %d\n", msg_T->msglen);
-        printf("mesg: %s\n\n", msg_T->msg);
+        printf("mesg: %s\n\n", msg_T->msg);*/
 
     } else {
         isLogout = true;

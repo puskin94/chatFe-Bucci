@@ -42,11 +42,11 @@ void *launchThreadListener(void *newConn) {
     int sock = *(int*)newConn, len;
     char *buffer = malloc(sizeof(char));
 
-    while(go && (read(sock, buffer, sizeof(char) * 5) > 0)) {
-        len = atoi(buffer) *  sizeof(char);
-        buffer = realloc(buffer, len);
+    while(go && (read(sock, buffer, sizeof(char) * 6) > 0)) {
+        len = atoi(buffer);
+        buffer = realloc(buffer, len * sizeof(char));
         read(sock, buffer, len);
-        printf("-->%s\n", buffer);
+        printf("%s\n", buffer);
     }
 
     pthread_exit(NULL);

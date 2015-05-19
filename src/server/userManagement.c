@@ -25,6 +25,11 @@ bool isInTable(char *user) {
     return (CERCAHASH(user, HASH_TABLE) == NULL) ? false : true;
 }
 
+int returnSockId(char *user, hdata_t *bs) {
+    bs = CERCAHASH(user, HASH_TABLE);
+    return bs->sockid;
+}
+
 /* la funzione sottostante consente di caricare tutti i dati necessari
 alla gestione degli utenti nella tabella hash */
 
@@ -135,8 +140,8 @@ char *listUser() {
         strcat(tmpBuff, ":");
         el = SUCCLISTA(el);
     }
-    buff = malloc(((strlen(tmpBuff) - 1) + 5) * sizeof(char));
-    sprintf(buff, "%05zu%s", strlen(tmpBuff) - 1 + 5, tmpBuff);
+    buff = malloc(((strlen(tmpBuff) - 1) + 6) * sizeof(char));
+    sprintf(buff, "%06zu%s", strlen(tmpBuff) - 1 + 6, tmpBuff);
 
     return buff;
 }
