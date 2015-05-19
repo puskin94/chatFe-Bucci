@@ -23,13 +23,11 @@
 void *launchThreadReader(void *newConn) {
 
     int sock = *(int*)newConn;
-    char *msgToSend = malloc(sizeof(char));
-    char *cmd;
-    char *msgTo;
-    char *msgText;
-
     int numChars;
-    char *msg = NULL;
+
+    char *msgToSend = malloc(sizeof(char));
+    char *cmd, *msgText, *msgTo, *msg = NULL;
+
     size_t msgLen = 0;
     ssize_t lenRead;
 
@@ -58,7 +56,7 @@ void *launchThreadReader(void *newConn) {
                     numChars = (18 + strlen(msgTo) + strlen(msgText));
                     msgToSend = realloc(msgToSend, numChars * sizeof(char));
 
-                    sprintf(msgToSend, "%06d%c000%03zu%s%05zu%s", numChars,
+                    sprintf(msgToSend, "%06d%c000%03zu%s%05zu%s", numChars-6,
                         MSG_SINGLE, strlen(msgTo), msgTo, strlen(msgText), msgText);
 
                 } else {
@@ -66,20 +64,19 @@ void *launchThreadReader(void *newConn) {
                     numChars = (18 + strlen(msgText));
                     msgToSend = realloc(msgToSend, numChars * sizeof(char));
 
-                    sprintf(msgToSend, "%06d%c000000%05zu%s", numChars,
+                    sprintf(msgToSend, "%06d%c000000%05zu%s", numChars-6,
                         MSG_BRDCAST, strlen(msgText), msgText);
                 }
             } else if (strncmp(msg, "#logout", 7) == 0) {
                 numChars = 18;
                 msgToSend = realloc(msgToSend, numChars * sizeof(char));
-                sprintf(msgToSend, "%06d%c00000000000", numChars, MSG_LOGOUT);
+                sprintf(msgToSend, "%06d%c00000000000", numChars-6, MSG_LOGOUT);
             } else if (strncmp(msg, "#ls", 3) == 0) {
                 numChars = 18;
                 msgToSend = realloc(msgToSend, numChars * sizeof(char));
-                sprintf(msgToSend, "%06d%c00000000000", numChars, MSG_LIST);
+                sprintf(msgToSend, "%06d%c00000000000", numChars-6, MSG_LIST);
             }
 
-            printf("%s\n", msgToSend);
             if(send(sock , msgToSend , numChars , 0) < 0) {
                 fprintf(stderr,"Cannot send the message to the server\n");
             }

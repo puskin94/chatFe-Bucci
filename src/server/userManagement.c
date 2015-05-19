@@ -21,17 +21,19 @@
 static hash_t HASH_TABLE;
 static lista OnUser;
 
+bool isInTable(char *user) {
+    return (CERCAHASH(user, HASH_TABLE) == NULL) ? false : true;
+}
+
 /* la funzione sottostante consente di caricare tutti i dati necessari
 alla gestione degli utenti nella tabella hash */
 
 bool readUserFile() {
 
     FILE *fp;
-    char userInfo[771]; // 768 == (256 * 3) + 2 + 1 --> (single max lenght + 2 (:) + 1 (\0))
 
-    char *userName;
-    char *fullName;
-    char *mail;
+    char userInfo[771];
+    char *userName, *fullName, *mail;
 
     hdata_t *user;
 
@@ -72,14 +74,12 @@ bool readUserFile() {
 bool registerNewUser(char *msg, hdata_t *user) {
 
     // variabili necessarie all'inserimento dei dati nella hash table
-    char *userName;
-    char *fullName;
-    char *mail;
+    char *userName, *fullName, *mail;
 
     userName = strdup(strtok(msg, ":"));
 
     // se il nome utente non è ancora stato usato
-    if (CERCAHASH(userName, HASH_TABLE) == NULL) {
+    if (!isInTable(userName)) {
         fullName = strdup(strtok(NULL, ":"));
         mail = strdup(strtok(NULL, ":"));
 
@@ -100,6 +100,7 @@ int loginUser(char *user, hdata_t *bs, int sock) {
     // se l'username non è presente, ritorna -2
     // se l'utente è presente ma è già loggato, ritorna -3
     char msg[100];
+
     bs = CERCAHASH(user, HASH_TABLE);
     posizione lastElem = ULTIMOLISTA(OnUser);
     if (bs == NULL) {
@@ -126,6 +127,7 @@ int loginUser(char *user, hdata_t *bs, int sock) {
 char *listUser() {
     posizione el = PRIMOLISTA(OnUser);
     char *tmpBuff = malloc(sizeof(char));
+    char *buff;
 
     while (PREDLISTA(el) != ULTIMOLISTA(OnUser)) {
         tmpBuff = realloc(tmpBuff, (strlen(tmpBuff) + strlen(el->elemento)) * sizeof(char));
@@ -133,7 +135,8 @@ char *listUser() {
         strcat(tmpBuff, ":");
         el = SUCCLISTA(el);
     }
-    strncpy(tmpBuff, tmpBuff, strlen(tmpBuff) - 1);
+    buff = malloc(((strlen(tmpBuff) - 1) + 5) * sizeof(char));
+    sprintf(buff, "%05zu%s", strlen(tmpBuff) - 1 + 5, tmpBuff);
 
-    return tmpBuff;
+    return buff;
 }

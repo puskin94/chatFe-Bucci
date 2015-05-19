@@ -56,6 +56,8 @@ int main(int argc, char *argv[]) {
             return -5;
         }
 
+        pthread_join(threadMain, NULL);
+
         if (sigaction(SIGINT, &sigHandling, 0) < 0) {
             buildLog("Error in signal Handling ( SIGINT )", 0);
         }
@@ -63,9 +65,6 @@ int main(int argc, char *argv[]) {
         if (sigaction(SIGTERM, &sigHandling, 0) < 0) {
             buildLog("Error in signal Handling ( SIGTERM )", 0);
         }
-
-
-        pthread_join(threadMain, NULL);
 
     } else if (pid < 0) {
         buildLog("[!] Cannot create child process", 1);
@@ -76,12 +75,7 @@ int main(int argc, char *argv[]) {
 
 void sighand(int sig) {
     if ( sig == SIGINT || sig == SIGTERM ) {
-        buildLog("CTRL-C Received. Quitting", 1);
-        printf("go vale %d\n", go);
         go = false;
-        printf("ora go vale %d\n", go);
-
-
         //saveTable();
     }
 }

@@ -35,9 +35,16 @@ typedef struct {
     char *msg;
 } msg_t;
 
+char *bufferPC[K];
+
 
 void *launchThreadDispatcher() {
 
+    /*while (1) {
+        if(bufferPC[1] != "") {
+            printf("--> %s\n", bufferPC[1]);
+        }
+    }*/
 
     pthread_exit(NULL);
 }

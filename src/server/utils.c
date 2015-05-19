@@ -41,6 +41,7 @@ void buildLog(char message[100], int action) {
 
     char ts[64];
     char errorMsg[200] = "";
+
     timestamp(ts);
     strcat(errorMsg, ts);
     strcat(errorMsg, ":");

@@ -35,16 +35,10 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in client;
 
     // intero che indica il numero di tentativi di connessione al server
-    int count = 0, sockId;
-    int buffSize;
-    int remaining = 5;
-    int lenMsg;
-    int tmpLenMsg = 0;
-    char intToChar[5];
+    int sockId, buffSize, remaining, count, tmpLenMsg, lenMsg;
+    count = 0, remaining = 5, tmpLenMsg = 0;
 
-    char name[128];
-    char surname[128];
-    char mail[256];
+    char intToChar[5], name[128], surname[128], mail[256];
 
     char *tmpMsg;
     char *buff = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
@@ -114,7 +108,7 @@ int main(int argc, char *argv[]) {
                 */
                 buff = realloc(buff, buffSize);
 
-                sprintf(buff,"%06d%c000000%05zu%s:%s %s:%s", buffSize, MSG_REGLOG,
+                sprintf(buff,"%06d%c000000%05zu%s:%s %s:%s", buffSize-6, MSG_REGLOG,
                                                     (strlen(argv[3])+strlen(name)+strlen(surname)+strlen(mail)) + 3,
                                                     argv[3], name, surname, mail);
 
@@ -140,7 +134,7 @@ int main(int argc, char *argv[]) {
             */
             buff = realloc(buff, buffSize);
 
-            sprintf(buff,"%06d%c000000%05d%s", buffSize, MSG_LOGIN, lenMsg, argv[1]);
+            sprintf(buff,"%06d%c000000%05d%s", buffSize-6, MSG_LOGIN, lenMsg, argv[1]);
 
             if(send(sockId , buff , buffSize , 0) < 0) {
                 printf("[!] Cannot send login request to the server!\n");
@@ -180,16 +174,16 @@ int main(int argc, char *argv[]) {
 
         // vengono creati 2 thread ( come da consegna ): threadReader & threadListener
         if (pthread_create(&threadReader, NULL, &launchThreadReader,(void *)&sockId)!= 0) {
-            fprintf(stderr,"Failed to create threadReader");
+            fprintf(stderr, "Failed to create threadReader");
             return -2;
         }
-        /*if (pthread_create(&threadListener, NULL, &launchThreadListener, (void *)&sockId)!= 0) {
-            buildLog("Failed to create threadListener", 1);
+        if (pthread_create(&threadListener, NULL, &launchThreadListener, (void *)&sockId)!= 0) {
+            fprintf(stderr, "Failed to create threadListener");
             return -3;
-        }*/
+        }
 
         pthread_join(threadReader, NULL);
-        //pthread_join(threadListener, NULL);
+        pthread_join(threadListener, NULL);
 
     }
     return 0;

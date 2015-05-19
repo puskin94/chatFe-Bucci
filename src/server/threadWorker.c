@@ -39,13 +39,17 @@ typedef struct {
 
 char *buildMsgForSocket(int success);
 void readAndLoadFromSocket(msg_t *msg_T,int sock, int len, bool go);
+char *msgForDispatcher(msg_t *msg_T);
+
+char *bufferPC[K];
+bool isLogout = false;
 
 
 void *launchThreadWorker(void *newConn) {
 
 
-    // inizializzo il thread dispatcher
-
+    int writePos = 0, success = 0;
+    int sock = *(int*)newConn;
 
     bool go = true;
 
@@ -53,15 +57,11 @@ void *launchThreadWorker(void *newConn) {
 
     char *buff = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
                                         // ovvero il primo token da leggere
-    char *tmpBuff;
 
-    // questa variabile verrà riempita dopo la registrazione con
+    // la variabile 'userName' verrà riempita dopo la registrazione con
     // il nome dell'utente che dovrà effettuare il login
-    char *userName;
+    char *tmpBuff, *userName;
 
-    int sock = *(int*)newConn;
-
-    int success = 0;
 
 
     msg_t *msg_T = malloc(sizeof(struct msg_t*));
@@ -72,7 +72,7 @@ void *launchThreadWorker(void *newConn) {
     // Viene ricevuto il messaggio e controllato quale servizio
     // viene richiesto
 
-    while(go && (read(sock, buff, sizeof(char) * 6) > 0)) {
+    while(go && (read(sock, buff, sizeof(char) * 6) > 0) && !isLogout) {
 
         readAndLoadFromSocket(msg_T, sock, atoi(buff), go);
 
@@ -117,9 +117,16 @@ void *launchThreadWorker(void *newConn) {
 
             if (msg_T->type == MSG_LIST) {
                 tmpBuff = listUser();
-                printf("%s\n", tmpBuff);
+                if(send(sock , tmpBuff , strlen(tmpBuff) , 0) < 0) {
+                    buildLog("[!] Cannot send Infos to the client!", 1);
+                }
             } else if (msg_T->type == MSG_BRDCAST || msg_T->type == MSG_SINGLE) {
-
+                // tmpBuff conterrà il messaggio da spedire al threadDispatcher
+                tmpBuff = msgForDispatcher(msg_T);
+                // il buffer viene gestito circolarmente
+                writePos = (writePos + 1) % K;
+                // viene copiato il messaggio dentro bufferPC
+                bufferPC[writePos] = strdup(tmpBuff);
             }
         }
     }
@@ -129,6 +136,41 @@ void *launchThreadWorker(void *newConn) {
     pthread_exit(NULL);
 }
 
+char *msgForDispatcher(msg_t *msg_T) {
+    char *tmpBuff = malloc(sizeof(char));
+
+    // crea il messaggio solamente se il destinatario è registrato
+    if ((msg_T->type == MSG_SINGLE)) {
+        if (isInTable(msg_T->receiver)) {
+            /* il buffer di risposta deve essere abbastanza grande per contenere il messaggio.
+            esso sarà formattato come
+
+            <lunghezza di tutto il messaggio><tipo><lunghezza del receiver>
+            <receiver><lunghezza del messaggio><messaggio>
+            */
+            tmpBuff = malloc((15 + strlen(msg_T->receiver) + msg_T->msglen) * sizeof(char));
+            sprintf(tmpBuff, "%06d%c%03zu%s%05d%s", 15 + strlen(msg_T->receiver) + msg_T->msglen,
+                                                msg_T->type,
+                                                strlen(msg_T->receiver),
+                                                msg_T->receiver,
+                                                msg_T->msglen,
+                                                msg_T->msg);
+        } else {
+            // 257 -> Numero non gestibile, il massimo è 256
+            // Il dispatcher riconosce l'errore
+            tmpBuff = malloc(3 * sizeof(char));
+            strncpy(tmpBuff, "257", 3);
+        }
+    } else {
+        // se il messaggio è di tipo MSG_BRDCAST
+        tmpBuff = malloc((12 + msg_T->msglen) * sizeof(char));
+        sprintf(tmpBuff, "%06d%c%05d%s", 12 + msg_T->msglen,
+                                                msg_T->type,
+                                                msg_T->msglen,
+                                                msg_T->msg);
+    }
+    return tmpBuff;
+}
 char *buildMsgForSocket(int success) {
 
     /* la gestione del successo o meno delle azioni richieste dipende da questa funzione.
@@ -175,8 +217,7 @@ void readAndLoadFromSocket(msg_t *msg_T, int sock, int len, bool go) {
     char *tmpBuff = malloc(lenToAllocate);
     char *strLen = malloc(sizeof(char));
 
-    int forCounter;
-    int charsRead = 0;
+    int forCounter, charsRead = 0;
 
 
         /* nelle successive linee viene riempita la struttura 'msg_T'.
@@ -261,8 +302,6 @@ void readAndLoadFromSocket(msg_t *msg_T, int sock, int len, bool go) {
         printf("mesg: %s\n\n", msg_T->msg);
 
     } else {
-
-        go = false;
-
+        isLogout = true;
     }
 }
