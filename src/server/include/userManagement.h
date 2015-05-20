@@ -11,6 +11,7 @@ bool registerNewUser(char *msg, hdata_t *user);
 bool isInTable(char *user);
 int loginUser(char *user, hdata_t *bs, int sock);
 int returnSockId(char *user, hdata_t *bs);
-char *listUser();
+void listUser(char **tmpBuff);
+void logout(char *user, hdata_t *bs);
 
 #endif

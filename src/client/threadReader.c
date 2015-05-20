@@ -20,6 +20,7 @@
 #define MSG_LIST 'I'
 #define MSG_LOGOUT 'X'
 
+
 void *launchThreadReader(void *newConn) {
 
     int sock = *(int*)newConn;
@@ -27,6 +28,8 @@ void *launchThreadReader(void *newConn) {
 
     char *msgToSend = malloc(sizeof(char));
     char *cmd, *msgText, *msgTo, *msg = NULL;
+
+    bool loggedOut = false;
 
     size_t msgLen = 0;
     ssize_t lenRead;
@@ -37,7 +40,7 @@ void *launchThreadReader(void *newConn) {
         ogni volta che veniva premuto un tasto. Questo rendeva la quantità
         di realloc veramente alta ammazzando le performances del client.
     */
-    while(((lenRead = getline(&msg, &msgLen, stdin)) != -1 )) {
+    while(!loggedOut && ((lenRead = getline(&msg, &msgLen, stdin)) != -1 )) {
 
         msg[strcspn(msg, "\n")] = 0;
 
@@ -71,6 +74,7 @@ void *launchThreadReader(void *newConn) {
                 numChars = 18;
                 msgToSend = realloc(msgToSend, numChars * sizeof(char));
                 sprintf(msgToSend, "%06d%c00000000000", numChars-6, MSG_LOGOUT);
+                loggedOut = true;
             } else if (strncmp(msg, "#ls", 3) == 0) {
                 numChars = 18;
                 msgToSend = realloc(msgToSend, numChars * sizeof(char));
@@ -80,9 +84,14 @@ void *launchThreadReader(void *newConn) {
             if(send(sock , msgToSend , numChars , 0) < 0) {
                 fprintf(stderr,"Cannot send the message to the server\n");
             }
+
         }
 
+        msg = NULL;
+        msgLen = 0;
+
     }
+
     free(msg); free(msgToSend);
     close(sock);
     pthread_exit(NULL);

@@ -37,9 +37,9 @@ typedef struct {
 } msg_t;
 
 
-char *buildMsgForSocket(int success);
-void readAndLoadFromSocket(msg_t *msg_T,int sock, int len, bool go);
-char *msgForDispatcher(msg_t *msg_T, char *sender);
+void buildMsgForSocket(int success, char **tmpBuff);
+void readAndLoadFromSocket(msg_t *msg_T,int sock, int len);
+void msgForDispatcher(msg_t *msg_T, char *sender, char **tmpBuff);
 
 char *bufferPC[K];
 bool isLogout = false;
@@ -55,12 +55,13 @@ void *launchThreadWorker(void *newConn) {
 
     pthread_mutex_t mux = PTHREAD_MUTEX_INITIALIZER;
 
-    char *buff = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
-                                        // ovvero il primo token da leggere
 
     // la variabile 'userName' verrà riempita dopo la registrazione con
     // il nome dell'utente che dovrà effettuare il login
-    char *tmpBuff, *userName;
+    char *buff, *tmpBuff, *userName;
+
+    buff = malloc(sizeof(char));
+    tmpBuff = malloc(sizeof(char));
 
 
     msg_t *msg_T = malloc(sizeof(struct msg_t*));
@@ -71,9 +72,9 @@ void *launchThreadWorker(void *newConn) {
     // Viene ricevuto il messaggio e controllato quale servizio
     // viene richiesto
 
-    while(go && (read(sock, buff, sizeof(char) * 6) > 0) && !isLogout) {
+    while(go && !isLogout && (read(sock, buff, sizeof(char) * 6) > 0)) {
 
-        readAndLoadFromSocket(msg_T, sock, atoi(buff), go);
+        readAndLoadFromSocket(msg_T, sock, atoi(buff));
 
         // TODO //
         // In ogni caso il thread worker deve scrivere sul log file
@@ -97,7 +98,7 @@ void *launchThreadWorker(void *newConn) {
             success = loginUser(userName, hashUser, sock);
         }
 
-        tmpBuff = buildMsgForSocket(success);
+        buildMsgForSocket(success, &tmpBuff);
 
         // la send sottostante ha il compito di informare il client se
         // le operazioni richieste sono andate a buon fine o meno
@@ -105,29 +106,40 @@ void *launchThreadWorker(void *newConn) {
             buildLog("[!] Cannot send Infos to the client!", 1);
         }
 
-
-        buff = realloc(buff, sizeof(char));
-        bzero(buff, sizeof(char));
+        //tmpBuff = realloc(tmpBuff, sizeof(char));
+        buff = realloc(buff, sizeof(char) * 6);
+        bzero(buff, sizeof(char) * 6);
+        //bzero(tmpBuff, sizeof(char));
         // In questo ciclo inizia il while che consente lo scambio interattivo
         // di messaggi tra client e server. Viene eseguito solamente se il server
         // ha risposto affermativamente al comando iniziale inviato dal client
         while (success == 0 && (read(sock, buff, sizeof(char) * 6) > 0)) {
-            readAndLoadFromSocket(msg_T, sock, atoi(buff), go);
+            readAndLoadFromSocket(msg_T, sock, atoi(buff));
 
             if (msg_T->type == MSG_LIST) {
-                tmpBuff = listUser();
+
+                listUser(&tmpBuff);
+
                 if(send(sock , tmpBuff , strlen(tmpBuff) , 0) < 0) {
                     buildLog("[!] Cannot send Infos to the client!", 1);
                 }
+
             } else if (msg_T->type == MSG_BRDCAST || msg_T->type == MSG_SINGLE) {
                 // tmpBuff conterrà il messaggio da spedire al threadDispatcher
-                tmpBuff = msgForDispatcher(msg_T, userName);
+                msgForDispatcher(msg_T, userName, &tmpBuff);
 
                 if (tmpBuff[0] != MSG_ERROR) {
                     pthread_mutex_lock(&mux);
                     // viene copiato il messaggio dentro bufferPC
                     writeOnBufferPC(tmpBuff);
                     pthread_mutex_unlock(&mux);
+                }
+            } else if (msg_T->type == MSG_LOGOUT) {
+                logout(userName, hashUser);
+                buildMsgForSocket(1, &tmpBuff);
+                // avverto il client che la disconnessione è avvenuta con successo
+                if(send(sock , tmpBuff , strlen(tmpBuff) , 0) < 0) {
+                    buildLog("[!] Cannot send Infos to the client!", 1);
                 }
             }
         }
@@ -138,8 +150,10 @@ void *launchThreadWorker(void *newConn) {
     pthread_exit(NULL);
 }
 
-char *msgForDispatcher(msg_t *msg_T, char *sender) {
-    char *tmpBuff = malloc(sizeof(char));
+void msgForDispatcher(msg_t *msg_T, char *sender, char **tmpBuff) {
+
+    *tmpBuff = malloc(sizeof(char));
+
 
     // crea il messaggio solamente se il destinatario è registrato
     if ((msg_T->type == MSG_SINGLE)) {
@@ -150,8 +164,8 @@ char *msgForDispatcher(msg_t *msg_T, char *sender) {
             <lunghezza di tutto il messaggio><tipo><lunghezza del receiver>
             <receiver><lunghezza del messaggio><messaggio>
             */
-            tmpBuff = malloc((12 + strlen(msg_T->receiver) + strlen(sender) + msg_T->msglen) * sizeof(char));
-            sprintf(tmpBuff, "%c%03zu%s%03zu%s%05d%s", msg_T->type,
+            *tmpBuff = realloc(*tmpBuff, (12 + strlen(msg_T->receiver) + strlen(sender) + msg_T->msglen) * sizeof(char));
+            sprintf(*tmpBuff, "%c%03zu%s%03zu%s%05d%s", msg_T->type,
                                                         strlen(msg_T->receiver),
                                                         msg_T->receiver,
                                                         strlen(sender),
@@ -159,58 +173,63 @@ char *msgForDispatcher(msg_t *msg_T, char *sender) {
                                                         msg_T->msglen,
                                                         msg_T->msg);
         } else {
-            sprintf(tmpBuff, "%c", MSG_ERROR);
+            *tmpBuff = realloc(*tmpBuff, sizeof(char) * 2);
+            sprintf(*tmpBuff, "%c", MSG_ERROR);
         }
     } else {
         // se il messaggio è di tipo MSG_BRDCAST
-        tmpBuff = malloc((9 + msg_T->msglen + strlen(sender)) * sizeof(char));
-        sprintf(tmpBuff, "%c%03zu%s%05d%s", msg_T->type,
+        *tmpBuff = realloc(*tmpBuff, (9 + msg_T->msglen + strlen(sender)) * sizeof(char));
+        sprintf(*tmpBuff, "%c%03zu%s%05d%s", msg_T->type,
                                             strlen(sender),
                                             sender,
                                             msg_T->msglen,
                                             msg_T->msg);
     }
-    return tmpBuff;
+
 }
-char *buildMsgForSocket(int success) {
+void buildMsgForSocket(int success, char **tmpBuff) {
 
     /* la gestione del successo o meno delle azioni richieste dipende da questa funzione.
     Se l'azione è stata eseguita con successo, la variabile 'success' ha valore 0
     quindi il messaggio da spedire al client è MSG_OK.
+    La funzione restituisce un messaggio speciale se success == 1
     In caso contrario 'success' avrà un valore negativo. In base alla tabella
     sottostante vengono creati diversi messaggi di errore da spedire al client*/
 
     /*
+    success == 1  -> logout avvenuto con successo
     success == -1 -> registrazione || login falliti ( username già presente nella table )
     success == -2 -> login fallito ( utente non registrato )
     success == -3 -> login fallito ( utente già loggato )
     */
 
-    char *tmpBuff = malloc(sizeof(char));
+    *tmpBuff = malloc(sizeof(char));
 
     switch(success) {
         case 0:
-            sprintf(tmpBuff,"%c", MSG_OK);
+            sprintf(*tmpBuff,"%c", MSG_OK);
+            break;
+        case 1:
+            *tmpBuff = realloc(*tmpBuff, sizeof(char) * 6);
+            sprintf(*tmpBuff,"00000%c", MSG_OK);
             break;
         case -1:
-            tmpBuff = realloc(tmpBuff, sizeof(char) * 61);
-            sprintf(tmpBuff,"%c057Error during Registration... ( username already taken ? )", MSG_ERROR);
+            *tmpBuff = realloc(*tmpBuff, sizeof(char) * 61);
+            sprintf(*tmpBuff,"%c057Error during Registration... ( username already taken ? )", MSG_ERROR);
             break;
         case -2:
-            tmpBuff = realloc(tmpBuff, sizeof(char) * 44);
-            sprintf(tmpBuff,"%c040Error during Login... Username not found", MSG_ERROR);
+            *tmpBuff = realloc(*tmpBuff, sizeof(char) * 44);
+            sprintf(*tmpBuff,"%c040Error during Login... Username not found", MSG_ERROR);
             break;
         case -3:
-            tmpBuff = realloc(tmpBuff, sizeof(char) * 27);
-            sprintf(tmpBuff, "%c023You are already Logged!", MSG_ERROR);
+            *tmpBuff = realloc(*tmpBuff, sizeof(char) * 27);
+            sprintf(*tmpBuff, "%c023You are already Logged!", MSG_ERROR);
             break;
     }
 
-    return tmpBuff;
-
 }
 
-void readAndLoadFromSocket(msg_t *msg_T, int sock, int len, bool go) {
+void readAndLoadFromSocket(msg_t *msg_T, int sock, int len) {
 
     int lenToAllocate = sizeof(char) * len;
     char *buffer = malloc(lenToAllocate); // la dimensione iniziale è quella di un char

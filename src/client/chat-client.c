@@ -34,13 +34,11 @@ int main(int argc, char *argv[]) {
 
     struct sockaddr_in client;
 
-    // intero che indica il numero di tentativi di connessione al server
-    int sockId, buffSize, remaining, count, tmpLenMsg, lenMsg;
-    count = 0, remaining = 5, tmpLenMsg = 0;
+    int sockId, buffSize, count, lenMsg;
+    count = 0;
 
-    char intToChar[5], name[128], surname[128], mail[256];
+    char name[128], surname[128], mail[256];
 
-    char *tmpMsg;
     char *buff = malloc(sizeof(char)); // la dimensione iniziale è quella di un char
                                         // ovvero il primo token da leggere
 
@@ -182,8 +180,8 @@ int main(int argc, char *argv[]) {
             return -3;
         }
 
-        pthread_join(threadReader, NULL);
         pthread_join(threadListener, NULL);
+        pthread_join(threadReader, NULL);
 
     }
     return 0;

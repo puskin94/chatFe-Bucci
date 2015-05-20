@@ -126,22 +126,52 @@ int loginUser(char *user, hdata_t *bs, int sock) {
     return -3;
 }
 
+void logout(char *user, hdata_t *bs) {
+
+    char msg[100];
+    bool deleted = false;
+    posizione el = PRIMOLISTA(OnUser);
+
+    // prima cambio il suo sockid nella Hash_Table
+    bs = CERCAHASH(user, HASH_TABLE);
+    bs->sockid = -1;
+    // poi rimuovo il suo nome dalla lista degli OnUser
+
+    while (PREDLISTA(el) != ULTIMOLISTA(OnUser) && !deleted) {
+        if (strcmp(el->elemento, user) == 0) {
+            CANCLISTA(&el);
+            deleted = true;
+        }
+        el = SUCCLISTA(el);
+    }
+    // scrivo nel log-file che l'utente si è disconnesso
+    strcpy(msg, user);
+    strcat(msg, " has logged out");
+    buildLog(msg, 0);
+}
+
 
 // questa funzione non funziona
 
-char *listUser() {
-    posizione el = PRIMOLISTA(OnUser);
-    char *tmpBuff = malloc(sizeof(char));
+void listUser(char **tmpBuff) {
+    bool isFirst = true;
     char *buff;
 
+    posizione el = PRIMOLISTA(OnUser);
+
     while (PREDLISTA(el) != ULTIMOLISTA(OnUser)) {
-        tmpBuff = realloc(tmpBuff, (strlen(tmpBuff) + strlen(el->elemento)) * sizeof(char));
-        strcat(tmpBuff, el->elemento);
-        strcat(tmpBuff, ":");
+        if (!isFirst) {
+            buff = realloc(buff, (strlen(buff) + strlen(el->elemento) + 1) * sizeof(char));
+            strcat(buff, ":");
+            strcat(buff, el->elemento);
+        } else {
+            buff = malloc(strlen(el->elemento) * sizeof(char));
+            strcat(buff, el->elemento);
+            isFirst = false;
+        }
         el = SUCCLISTA(el);
     }
-    buff = malloc(((strlen(tmpBuff) - 1) + 6) * sizeof(char));
-    sprintf(buff, "%06zu%s", strlen(tmpBuff) - 1 + 6, tmpBuff);
+    *tmpBuff = malloc(6 + strlen(buff));
+    sprintf(*tmpBuff, "%06zu%s", strlen(buff), buff);
 
-    return buff;
 }
