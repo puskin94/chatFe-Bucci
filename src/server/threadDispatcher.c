@@ -33,7 +33,6 @@ typedef struct {
     char *message[K];
     char *receiver[K];
     char *sender[K];
-    char type[K];
     pthread_mutex_t buffMux;
     int readpos, writepos;
     int count;
@@ -65,7 +64,7 @@ void *launchThreadDispatcher() {
 
     while(go) {
 
-        isBrd = readFromBufferPC(sender, receiver, msg);
+        isBrd = readFromBufferPC(&sender, &receiver, &msg);
 
         userName = strtok(receiver, ":");
 
@@ -85,6 +84,7 @@ void *launchThreadDispatcher() {
                                                     sender,
                                                     msg);
             }
+
             if(send(receiverId , sendBuffer , strlen(sendBuffer), 0) < 0) {
                 buildLog("[!] Cannot send Infos to the client!", 1);
             }
@@ -99,7 +99,7 @@ void *launchThreadDispatcher() {
 }
 
 
-bool readFromBufferPC(char *sender, char *receiver, char *msg) {
+bool readFromBufferPC(char **sender, char **receiver, char **msg) {
 
     bool isBrd = false;
 
@@ -111,33 +111,32 @@ bool readFromBufferPC(char *sender, char *receiver, char *msg) {
     }
 
 
-    sender = realloc(sender, sizeof(BufferPC->sender[BufferPC->readpos]));
-    strcpy(sender, BufferPC->sender[BufferPC->readpos]);
+    *sender = strdup(BufferPC->sender[BufferPC->readpos]);
 
     // se BufferPC->receiver è diverso da '*', vuol dire
     // che si tratta di un messaggio singolo, altrimenti è un messaggio broadcast
     if (strcmp(BufferPC->receiver[BufferPC->readpos], "*") != 0) {
-        receiver = realloc(receiver, sizeof(BufferPC->sender[BufferPC->readpos]));
-        strcpy(receiver, BufferPC->receiver[BufferPC->readpos]);
+        *receiver = strdup(BufferPC->receiver[BufferPC->readpos]);
     } else {
         // listUser restituisce una stringa già formattata
         // per l'invio ( richiesta #ls ). Per adattarla allo scopo di questa funzione
         // bisogna utilizzare il suo contenuto dal settimo byte in poi
         listUser(&tmpBuff);
-        receiver = realloc(receiver, strlen(tmpBuff)-6);
-        strncpy(receiver, tmpBuff + 6, strlen(tmpBuff)-6);
 
+        *receiver = strndup(tmpBuff + 6, strlen(tmpBuff) - 6);
         isBrd = true;
     }
 
-    msg = realloc(msg, sizeof(BufferPC->sender[BufferPC->readpos]));
-    strcpy(msg, BufferPC->message[BufferPC->readpos]);
+
+    *msg = strdup(BufferPC->message[BufferPC->readpos]);
 
     BufferPC->readpos = (BufferPC->readpos + 1) % K;
     BufferPC->count--;
 
     pthread_mutex_unlock(&BufferPC->buffMux);
 
+
+    free(tmpBuff);
     return isBrd;
 }
 
@@ -145,15 +144,24 @@ bool readFromBufferPC(char *sender, char *receiver, char *msg) {
 void writeOnBufferPC(char *msg) {
 
     int charsRead = 0;
-    char *tmpBuff = malloc(sizeof(char) * 3);;
+    char *tmpBuff = malloc(sizeof(char) * 3);
 
     pthread_mutex_lock(&BufferPC->buffMux);
     while (BufferPC->count == K) {
         pthread_cond_wait(&BufferPC->FULL, &BufferPC->buffMux);
     }
 
+    /*
+    MESSAGGI
+    single:
+    S006puskin005mario00004ciao
 
-    BufferPC->type[BufferPC->writepos] = msg[0];
+    broadcast:
+    B005mario00004ciao
+    */
+
+
+    // lettura del tipo di messaggio
     charsRead += 1;
 
     if (msg[0] == MSG_SINGLE) {
@@ -174,12 +182,13 @@ void writeOnBufferPC(char *msg) {
     } else {
         // per come è formattato il messaggio da inviare al client,
         // il destinatario è * ( per i messaggi Broadcast )
-        BufferPC->receiver[BufferPC->writepos] = malloc(sizeof(char) * strlen("*"));
+        BufferPC->receiver[BufferPC->writepos] = malloc(sizeof(char) * 2);
         // popolo il campo
-        strncpy(BufferPC->receiver[BufferPC->writepos], "*", strlen("*"));
+        strncpy(BufferPC->receiver[BufferPC->writepos], "*", 2);
     }
 
     // copio la lunghezza del sender dentro tmpBuff
+    tmpBuff = realloc(tmpBuff, sizeof(char) * 3);
     strncpy(tmpBuff, msg + charsRead, 3);
     charsRead += 3;
     // alloco lo spazio necessario per il sender nella struttura
@@ -198,6 +207,7 @@ void writeOnBufferPC(char *msg) {
     // alloco lo spazio necessario per il messaggio nella struttura
     BufferPC->message[BufferPC->writepos] = malloc(sizeof(char) * atoi(tmpBuff));
     // popolo il campo
+
     strncpy(BufferPC->message[BufferPC->writepos], msg + charsRead, atoi(tmpBuff));
 
 
@@ -207,6 +217,8 @@ void writeOnBufferPC(char *msg) {
 
     pthread_cond_signal(&BufferPC->EMPTY);
     pthread_mutex_unlock(&BufferPC->buffMux);
+
+    free(tmpBuff);
 
 }
 

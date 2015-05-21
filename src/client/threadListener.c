@@ -36,18 +36,23 @@ void *launchThreadListener(void *newConn) {
         if (strncmp(buffer, P_LOGOUT, 6) != 0) {
 
             len = atoi(buffer);
-
+            // pulisco il buffer
+            bzero(buffer, 6);
+            // lo rialloco della grandezza necessaria
             buffer = realloc(buffer, len * sizeof(char));
+            // leggo dal socket
             read(sock, buffer, len);
+            // stampo il messaggio formattato con una tabulazione
             printf("\t%s\n", buffer);
 
-            // pulisco e rialloco il buffer prima di riutilizzarlo
-            bzero(buffer, len);
-            buffer = realloc(buffer, sizeof(char) * 6);
 
         } else {
             loggedOut = true;
         }
+
+        // pulisco e rialloco il buffer prima di riutilizzarlo
+        bzero(buffer, len);
+        buffer = realloc(buffer, sizeof(char) * 6);
     }
 
     pthread_exit(NULL);

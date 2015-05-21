@@ -6,6 +6,6 @@
 void *launchThreadDispatcher();
 void writeOnBufferPC(char *msg);
 void initStruct();
-bool readFromBufferPC(char *sender, char *receiver, char *msg);
+bool readFromBufferPC(char **sender, char **receiver, char **msg);
 
 #endif
