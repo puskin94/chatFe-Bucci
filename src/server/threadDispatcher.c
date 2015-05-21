@@ -43,15 +43,13 @@ typedef struct {
 
 
 buffStruct bufferPC;
-
 buffStruct *BufferPC = &bufferPC;
-
 
 
 void *launchThreadDispatcher() {
 
-    char *sender, *receiver, *msg, *sendBuffer;
-    bool go = true;
+    char *sender, *receiver, *msg, *sendBuffer, *userName;
+    bool go = true, isBrd;
     int receiverId;
 
     hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
@@ -66,25 +64,46 @@ void *launchThreadDispatcher() {
     initStruct();
 
     while(go) {
-        readFromBufferPC(sender, receiver, msg);
-        receiverId = returnSockId(receiver, hashUser);
 
-        sendBuffer = realloc(sendBuffer, 6 + strlen(sender) + 1 + strlen(receiver) + 1 + strlen(msg));
-        sprintf(sendBuffer, "%06zu%s:%s:%s", strlen(sender) + 1 + strlen(receiver) + 1 + strlen(msg),
-                                            sender,
-                                            receiver,
-                                            msg);
+        isBrd = readFromBufferPC(sender, receiver, msg);
 
-        if(send(receiverId , sendBuffer , strlen(sendBuffer), 0) < 0) {
-            buildLog("[!] Cannot send Infos to the client!", 1);
-        }
+        userName = strtok(receiver, ":");
+
+        do {
+            receiverId = returnSockId(userName, hashUser);
+
+            if (!isBrd) {
+
+                sendBuffer = realloc(sendBuffer, 6 + strlen(sender) + 1 + strlen(userName) + 1 + strlen(msg));
+                sprintf(sendBuffer, "%06zu%s:%s:%s", strlen(sender) + 1 + strlen(userName) + 1 + strlen(msg),
+                                                    sender,
+                                                    userName,
+                                                    msg);
+            } else {
+                sendBuffer = realloc(sendBuffer, 6 + strlen(sender) + 3 + strlen(msg));
+                sprintf(sendBuffer, "%06zu%s:*:%s", strlen(sender) + 3 + strlen(msg),
+                                                    sender,
+                                                    msg);
+            }
+            if(send(receiverId , sendBuffer , strlen(sendBuffer), 0) < 0) {
+                buildLog("[!] Cannot send Infos to the client!", 1);
+            }
+
+            userName = strtok(NULL, ":");
+
+        } while (userName != NULL);
+
     }
 
     pthread_exit(NULL);
 }
 
 
-void readFromBufferPC(char *sender, char *receiver, char *msg) {
+bool readFromBufferPC(char *sender, char *receiver, char *msg) {
+
+    bool isBrd = false;
+
+    char *tmpBuff = malloc(sizeof(char));
 
     pthread_mutex_lock(&BufferPC->buffMux);
     while (BufferPC->count == 0) {
@@ -95,9 +114,20 @@ void readFromBufferPC(char *sender, char *receiver, char *msg) {
     sender = realloc(sender, sizeof(BufferPC->sender[BufferPC->readpos]));
     strcpy(sender, BufferPC->sender[BufferPC->readpos]);
 
-    if (BufferPC->receiver[BufferPC->readpos] != NULL) {
+    // se BufferPC->receiver è diverso da '*', vuol dire
+    // che si tratta di un messaggio singolo, altrimenti è un messaggio broadcast
+    if (strcmp(BufferPC->receiver[BufferPC->readpos], "*") != 0) {
         receiver = realloc(receiver, sizeof(BufferPC->sender[BufferPC->readpos]));
         strcpy(receiver, BufferPC->receiver[BufferPC->readpos]);
+    } else {
+        // listUser restituisce una stringa già formattata
+        // per l'invio ( richiesta #ls ). Per adattarla allo scopo di questa funzione
+        // bisogna utilizzare il suo contenuto dal settimo byte in poi
+        listUser(&tmpBuff);
+        receiver = realloc(receiver, strlen(tmpBuff)-6);
+        strncpy(receiver, tmpBuff + 6, strlen(tmpBuff)-6);
+
+        isBrd = true;
     }
 
     msg = realloc(msg, sizeof(BufferPC->sender[BufferPC->readpos]));
@@ -107,6 +137,8 @@ void readFromBufferPC(char *sender, char *receiver, char *msg) {
     BufferPC->count--;
 
     pthread_mutex_unlock(&BufferPC->buffMux);
+
+    return isBrd;
 }
 
 

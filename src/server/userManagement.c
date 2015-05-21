@@ -110,7 +110,6 @@ int loginUser(char *user, hdata_t *bs, int sock) {
     posizione lastElem = ULTIMOLISTA(OnUser);
     if (bs == NULL) {
         buildLog("Username not Found", 0);
-        printf("ritorno -2\n");
         return -2;
     } else if (bs->sockid == -1) {
         // modifico il sockid nella hashtable

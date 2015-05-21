@@ -17,7 +17,7 @@
 #define PORT 7778
 #define MAXCONNTENT 10
 #define SERVERIP "127.0.0.1"
-
+//#define SERVERIP "104.167.118.64"
 
 #define MSG_LOGIN 'L'
 #define MSG_REGLOG 'R'

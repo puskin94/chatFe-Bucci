@@ -17,6 +17,7 @@
 #include "include/threadMain.h"
 #include "include/userManagement.h"
 #include "include/threadDispatcher.h"
+#include "include/threadWorker.h"
 
 #define MSG_LOGIN 'L'
 #define MSG_REGLOG 'R'
@@ -36,12 +37,9 @@ typedef struct {
     char *msg;
 } msg_t;
 
+msg_t structMsg_t;
+msg_t *msg_T = &structMsg_t;
 
-void buildMsgForSocket(int success, char **tmpBuff);
-void readAndLoadFromSocket(msg_t *msg_T,int sock, int len);
-void msgForDispatcher(msg_t *msg_T, char *sender, char **tmpBuff);
-
-char *bufferPC[K];
 bool isLogout = false;
 
 
@@ -64,8 +62,6 @@ void *launchThreadWorker(void *newConn) {
     tmpBuff = malloc(sizeof(char));
 
 
-    msg_t *msg_T = malloc(sizeof(struct msg_t*));
-
     hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
 
 
@@ -74,7 +70,7 @@ void *launchThreadWorker(void *newConn) {
 
     while(go && !isLogout && (read(sock, buff, sizeof(char) * 6) > 0)) {
 
-        readAndLoadFromSocket(msg_T, sock, atoi(buff));
+        readAndLoadFromSocket(sock, atoi(buff));
 
         // TODO //
         // In ogni caso il thread worker deve scrivere sul log file
@@ -114,7 +110,7 @@ void *launchThreadWorker(void *newConn) {
         // di messaggi tra client e server. Viene eseguito solamente se il server
         // ha risposto affermativamente al comando iniziale inviato dal client
         while (success == 0 && (read(sock, buff, sizeof(char) * 6) > 0)) {
-            readAndLoadFromSocket(msg_T, sock, atoi(buff));
+            readAndLoadFromSocket(sock, atoi(buff));
 
             if (msg_T->type == MSG_LIST) {
 
@@ -126,7 +122,7 @@ void *launchThreadWorker(void *newConn) {
 
             } else if (msg_T->type == MSG_BRDCAST || msg_T->type == MSG_SINGLE) {
                 // tmpBuff conterrà il messaggio da spedire al threadDispatcher
-                msgForDispatcher(msg_T, userName, &tmpBuff);
+                msgForDispatcher(userName, &tmpBuff);
 
                 if (tmpBuff[0] != MSG_ERROR) {
                     pthread_mutex_lock(&mux);
@@ -134,6 +130,7 @@ void *launchThreadWorker(void *newConn) {
                     writeOnBufferPC(tmpBuff);
                     pthread_mutex_unlock(&mux);
                 }
+
             } else if (msg_T->type == MSG_LOGOUT) {
                 logout(userName, hashUser);
                 buildMsgForSocket(1, &tmpBuff);
@@ -150,7 +147,7 @@ void *launchThreadWorker(void *newConn) {
     pthread_exit(NULL);
 }
 
-void msgForDispatcher(msg_t *msg_T, char *sender, char **tmpBuff) {
+void msgForDispatcher(char *sender, char **tmpBuff) {
 
     *tmpBuff = malloc(sizeof(char));
 
@@ -229,7 +226,7 @@ void buildMsgForSocket(int success, char **tmpBuff) {
 
 }
 
-void readAndLoadFromSocket(msg_t *msg_T, int sock, int len) {
+void readAndLoadFromSocket(int sock, int len) {
 
     int lenToAllocate = sizeof(char) * len;
     char *buffer = malloc(lenToAllocate); // la dimensione iniziale è quella di un char

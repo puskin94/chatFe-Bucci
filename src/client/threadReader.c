@@ -27,7 +27,7 @@ void *launchThreadReader(void *newConn) {
     int numChars;
 
     char *msgToSend = malloc(sizeof(char));
-    char *cmd, *msgText, *msgTo, *msg = NULL;
+    char *cmd, *msgText, *msgTo, *strCpy, *msg = NULL;
 
     bool loggedOut = false;
 
@@ -49,26 +49,28 @@ void *launchThreadReader(void *newConn) {
             l'interno di questo costrutto costruisce il messaggio e lo spedisce al
             server. A lui il compito di smistarlo al destinatario */
             if (strncmp(msg, "#dest", 5) == 0) {
+                // strtok partiziona la stringa... meglio farne una copia
+                strCpy = strdup(msg);
 
                 cmd = strtok(msg, ":");
                 msgText = strdup(strtok(NULL, ":"));
 
-                // se il messaggio è privato
-                if (cmd[5] == ' ') {
+                // se il messaggio è broadcast
+                if (strCpy[6] == ':') {
+                    numChars = (18 + strlen(msgText));
+                    msgToSend = realloc(msgToSend, numChars * sizeof(char));
+
+                    sprintf(msgToSend, "%06d%c000000%05zu%s", numChars-6,
+                        MSG_BRDCAST, strlen(msgText), msgText);
+
+                } else {
+                    // se il messaggio è privato
                     msgTo = strdup(strtok(cmd, " ")); msgTo = strdup(strtok(NULL, " "));
                     numChars = (18 + strlen(msgTo) + strlen(msgText));
                     msgToSend = realloc(msgToSend, numChars * sizeof(char));
 
                     sprintf(msgToSend, "%06d%c000%03zu%s%05zu%s", numChars-6,
                         MSG_SINGLE, strlen(msgTo), msgTo, strlen(msgText), msgText);
-
-                } else {
-                    // se il messaggio è di tipo broadcast
-                    numChars = (18 + strlen(msgText));
-                    msgToSend = realloc(msgToSend, numChars * sizeof(char));
-
-                    sprintf(msgToSend, "%06d%c000000%05zu%s", numChars-6,
-                        MSG_BRDCAST, strlen(msgText), msgText);
                 }
             } else if (strncmp(msg, "#logout", 7) == 0) {
                 numChars = 18;
@@ -86,9 +88,6 @@ void *launchThreadReader(void *newConn) {
             }
 
         }
-
-        msg = NULL;
-        msgLen = 0;
 
     }
 

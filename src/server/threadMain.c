@@ -91,7 +91,6 @@ void *launchThreadMain(void *arg) {
             if(newConn == -1) {
                 buildLog("[!] Cannot accept new connections", 1);
             } else {
-                printf("\n[+] New Client Connected\n");
 
                 if(pthread_create(&threadWorker, &attr, &launchThreadWorker, (void *)&newConn) != 0) {
                     buildLog("Failed to create threadWorker", 1);
