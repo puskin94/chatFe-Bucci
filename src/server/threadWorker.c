@@ -43,7 +43,6 @@ msg_t *msg_T = &structMsg_t;
 
 void *launchThreadWorker(void *newConn) {
 
-
     int success = 0;
     int sock = *(int*)newConn;
 
@@ -55,7 +54,7 @@ void *launchThreadWorker(void *newConn) {
 
     // la variabile 'userName' verrà riempita dopo la registrazione con
     // il nome dell'utente che dovrà effettuare il login
-    char *buff, *tmpBuff, *userName;
+    char *buff, *tmpBuff, *userName, *errorMsg;
 
     buff = malloc(sizeof(char));
     tmpBuff = malloc(sizeof(char));
@@ -70,14 +69,6 @@ void *launchThreadWorker(void *newConn) {
     while(go && !isLogout && (read(sock, buff, sizeof(char) * 6) > 0)) {
 
         readAndLoadFromSocket(sock, atoi(buff));
-
-        // TODO //
-        // In ogni caso il thread worker deve scrivere sul log file
-        // il comando che dovrà eseguire
-        /*strcat(logMsg, msg_T->type);
-        strcat(logMsg, ":");
-        strcat(logMsg, msg_T->msg);
-        buildLog(logMsg, 0);*/
 
         userName = strdup(msg_T->msg);
         userName = strtok(userName, ":");
@@ -98,7 +89,8 @@ void *launchThreadWorker(void *newConn) {
         // la send sottostante ha il compito di informare il client se
         // le operazioni richieste sono andate a buon fine o meno
         if(send(sock , tmpBuff , strlen(tmpBuff) , 0) < 0) {
-            buildLog("[!] Cannot send Infos to the client!", 1);
+            errorMsg = strdup("[!] Cannot send Infos to the client!");
+            buildLog(errorMsg, 1);
         }
 
         //tmpBuff = realloc(tmpBuff, sizeof(char));
@@ -116,7 +108,8 @@ void *launchThreadWorker(void *newConn) {
                 listUser(&tmpBuff);
 
                 if(send(sock , tmpBuff , strlen(tmpBuff) , 0) < 0) {
-                    buildLog("[!] Cannot send Infos to the client!", 1);
+                    errorMsg = strdup("[!] Cannot send Infos to the client!");
+                    buildLog(errorMsg, 1);
                 }
 
             } else if (msg_T->type == MSG_BRDCAST || msg_T->type == MSG_SINGLE) {
@@ -135,7 +128,8 @@ void *launchThreadWorker(void *newConn) {
                 buildMsgForSocket(1, &tmpBuff);
                 // avverto il client che la disconnessione è avvenuta con successo
                 if(send(sock , tmpBuff , strlen(tmpBuff) , 0) < 0) {
-                    buildLog("[!] Cannot send Infos to the client!", 1);
+                    errorMsg = strdup("[!] Cannot send Infos to the client!");
+                    buildLog(errorMsg, 1);
                 }
                 isLogout = true;
             }

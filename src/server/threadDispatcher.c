@@ -47,7 +47,7 @@ buffStruct *BufferPC = &bufferPC;
 
 void *launchThreadDispatcher() {
 
-    char *sender, *receiver, *msg, *sendBuffer, *userName;
+    char *sender, *receiver, *msg, *sendBuffer, *userName, *logMsg;
     bool go = true, isBrd;
     int receiverId;
 
@@ -56,6 +56,7 @@ void *launchThreadDispatcher() {
 
     sendBuffer = malloc(sizeof(char));
 
+    logMsg = malloc(sizeof(char));
     sender = malloc(sizeof(char));
     receiver = malloc(sizeof(char));
     msg = malloc(sizeof(char));
@@ -86,9 +87,17 @@ void *launchThreadDispatcher() {
             }
 
             if(send(receiverId , sendBuffer , strlen(sendBuffer), 0) < 0) {
-                buildLog("[!] Cannot send Infos to the client!", 1);
+                    logMsg = strdup("[!] Cannot send Infos to the client!");
+                    buildLog(logMsg, 1);
             }
 
+
+            // scrivo sul log file i messaggi
+            logMsg = realloc(logMsg, (strlen(sender) + strlen(userName) + strlen(msg)) + 2);
+            sprintf(logMsg, "%s:%s:%s", sender, userName, msg);
+            buildLog(logMsg, 0);
+
+            // prendo l'username seguente
             userName = strtok(NULL, ":");
 
         } while (userName != NULL);

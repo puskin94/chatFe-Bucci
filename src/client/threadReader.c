@@ -53,7 +53,7 @@ void *launchThreadReader(void *newConn) {
                 strCpy = strdup(msg);
 
                 cmd = strtok(msg, ":");
-                msgText = strdup(strtok(NULL, ":"));
+                msgText = strdup(strtok(NULL, "\n"));
 
                 // se il messaggio è broadcast
                 if (strCpy[6] == ':') {
@@ -82,6 +82,7 @@ void *launchThreadReader(void *newConn) {
                 msgToSend = realloc(msgToSend, numChars * sizeof(char));
                 sprintf(msgToSend, "%06d%c00000000000", numChars-6, MSG_LIST);
             }
+
 
             if(send(sock , msgToSend , numChars , 0) < 0) {
                 fprintf(stderr,"Cannot send the message to the server\n");

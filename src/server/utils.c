@@ -21,7 +21,7 @@ void timestamp(char * ts) {
 }
 
 // consente la scrittura di messaggi sull'apposito file
-void writeToLog(char message[200]) {
+void writeToLog(char *message) {
 
     FILE *fp;
     fp = fopen(logFile, "a");
@@ -34,19 +34,18 @@ void writeToLog(char message[200]) {
 /* funzione che ha il compito di 'costruire' il testo per il file di log
 includendo timestamp ed il messaggio stesso. Il messaggio viene stampato
 anche su STDERR al variare dell' intero 'action' */
-void buildLog(char message[100], int action) {
+void buildLog(char *message, int action) {
+
 
     // if action == 0 -> normal message
     // if action == 1 -> error message
 
     char ts[64];
-    char errorMsg[200] = "";
+    char *errorMsg;
 
     timestamp(ts);
-    strcat(errorMsg, ts);
-    strcat(errorMsg, ":");
-    strcat(errorMsg, message);
-    strcat(errorMsg, "\n");
+    errorMsg = malloc((strlen(ts) + strlen(message) + 2) * sizeof(char));
+    sprintf(errorMsg, "%s:%s\n", ts, message);
 
     if (action == 1) {
         fprintf(stderr,errorMsg);
@@ -64,20 +63,24 @@ bool createLogFile() {
     FILE *fp;
 
     char ts[64];
-    char delimiter[52] = "**************************************************\n";
-    char semiDelimiterL[5] = "***  ";
-     char semiDelimiterR[4] = " ***";
-    char firstMessage[300] = "";
+    char *delimiter = "**************************************************\n";
+    char *semiDelimiterL = "***  ";
+    char *semiDelimiterR = " ***";
+    char *firstMessage;
     timestamp(ts);
 
+    firstMessage = malloc((strlen(delimiter) * 2 +
+                            strlen(semiDelimiterL) +
+                            strlen(semiDelimiterR) +
+                            strlen(ts) +
+                            strlen("Server Started @ ")) + 1 * sizeof(char));
 
-    strcat(firstMessage, delimiter);
-    strcat(firstMessage, semiDelimiterL);
-    strcat(firstMessage, "Server Started @ ");
-    strcat(firstMessage, ts);
-    strcat(firstMessage, semiDelimiterR);
-    strcat(firstMessage, "\n");
-    strcat(firstMessage, delimiter);
+    sprintf(firstMessage, "%s%sServer Started @ %s%s\n%s",
+                                                delimiter,
+                                                semiDelimiterL,
+                                                ts,
+                                                semiDelimiterR,
+                                                delimiter);
 
     fp = fopen(logFile, "w");
     if (fp != NULL) {

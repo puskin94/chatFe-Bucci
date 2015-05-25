@@ -86,6 +86,7 @@ void *launchThreadMain(void *arg) {
             buildLog("Failed to create threadDispatcher", 1);
         }
 
+
         while (go) {
             newConn = accept(sockId, (struct sockaddr *)&client, (socklen_t *)&len);
             if(newConn == -1) {

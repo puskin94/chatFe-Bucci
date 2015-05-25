@@ -31,8 +31,19 @@ int main(int argc, char *argv[]) {
     go = true;
     int pid;
 
+/*    struct sigaction sigHandling;
+    sigHandling.sa_handler = sighand;*/
+
+
+
+
+
+
+
     struct sigaction sigHandling;
     sigHandling.sa_handler = sighand;
+    sigHandling.sa_flags = 0;
+    sigemptyset( &sigHandling.sa_mask );
 
 
     // controllo sul necessario numero di parametri
@@ -56,15 +67,17 @@ int main(int argc, char *argv[]) {
             return -5;
         }
 
-        pthread_join(threadMain, NULL);
-
-        if (sigaction(SIGINT, &sigHandling, 0) < 0) {
+        /*if (sigaction(SIGINT, &sigHandling, 0) < 0) {
             buildLog("Error in signal Handling ( SIGINT )", 0);
         }
 
         if (sigaction(SIGTERM, &sigHandling, 0) < 0) {
             buildLog("Error in signal Handling ( SIGTERM )", 0);
-        }
+        }*/
+
+        sigaction( SIGINT, &sigHandling, NULL );
+
+        pthread_join(threadMain, NULL);
 
     } else if (pid < 0) {
         buildLog("[!] Cannot create child process", 1);
