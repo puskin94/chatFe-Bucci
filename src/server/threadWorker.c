@@ -40,8 +40,6 @@ typedef struct {
 msg_t structMsg_t;
 msg_t *msg_T = &structMsg_t;
 
-bool isLogout = false;
-
 
 void *launchThreadWorker(void *newConn) {
 
@@ -50,6 +48,7 @@ void *launchThreadWorker(void *newConn) {
     int sock = *(int*)newConn;
 
     bool go = true;
+    bool isLogout = false;
 
     pthread_mutex_t mux = PTHREAD_MUTEX_INITIALIZER;
 
@@ -138,6 +137,7 @@ void *launchThreadWorker(void *newConn) {
                 if(send(sock , tmpBuff , strlen(tmpBuff) , 0) < 0) {
                     buildLog("[!] Cannot send Infos to the client!", 1);
                 }
+                isLogout = true;
             }
         }
     }
@@ -263,53 +263,53 @@ void readAndLoadFromSocket(int sock, int len) {
     charsRead += 1;
     msg_T->type = tmpBuff[0];
 
-    if (msg_T->type != MSG_LOGOUT) {
-        bzero(tmpBuff, 1);
 
-        for (forCounter = 0; forCounter < 2; forCounter++) {
+    bzero(tmpBuff, 1);
 
-            strLen = realloc(strLen, 3); // adesso può contenere 3 decimali
-            strncpy(strLen, buffer + charsRead, 3);
-            charsRead += 3;
+    for (forCounter = 0; forCounter < 2; forCounter++) {
 
-                // ANNOTAZIONE
-                // il sender non è mai presente
-            if (atoi(strLen) != 0) {
-                lenToAllocate = sizeof(char) * atoi(strLen);
-                tmpBuff = realloc(tmpBuff, lenToAllocate); //adesso buff può contenere char * len
-                strncpy(tmpBuff, buffer + charsRead, atoi(strLen));
-                charsRead += atoi(strLen);
+        strLen = realloc(strLen, 3); // adesso può contenere 3 decimali
+        strncpy(strLen, buffer + charsRead, 3);
+        charsRead += 3;
 
-                if (forCounter == 0) {
-                    msg_T->sender = malloc(lenToAllocate);
-                    msg_T->sender = strdup(tmpBuff);
-                } else {
-                    msg_T->receiver = malloc(lenToAllocate);
-                    msg_T->receiver = strdup(tmpBuff);
-                }
-            }
-            bzero(tmpBuff, lenToAllocate);
-
-        }
-
-            // qua leggo len e msg
-            // len lo facciamo un po più grande: 5 digit
-        tmpBuff = realloc(tmpBuff, 5); // adesso può contenere 5 decimali
-        strncpy(tmpBuff, buffer + charsRead, 5);
-        charsRead += 5;
-        msg_T->msglen = atoi(tmpBuff);
-        bzero(tmpBuff, 5);
-
-
-        if(msg_T->msglen != 0) {
-            lenToAllocate = sizeof(char) * msg_T->msglen;
+            // ANNOTAZIONE
+            // il sender non è mai presente
+        if (atoi(strLen) != 0) {
+            lenToAllocate = sizeof(char) * atoi(strLen);
             tmpBuff = realloc(tmpBuff, lenToAllocate); //adesso buff può contenere char * len
-            strncpy(tmpBuff, buffer + charsRead, msg_T->msglen);
-            msg_T->msg = malloc(lenToAllocate);
-            msg_T->msg = strdup(tmpBuff);
-        }
+            strncpy(tmpBuff, buffer + charsRead, atoi(strLen));
+            charsRead += atoi(strLen);
 
+            if (forCounter == 0) {
+                msg_T->sender = malloc(lenToAllocate);
+                msg_T->sender = strdup(tmpBuff);
+            } else {
+                msg_T->receiver = malloc(lenToAllocate);
+                msg_T->receiver = strdup(tmpBuff);
+            }
+        }
         bzero(tmpBuff, lenToAllocate);
+
+    }
+
+        // qua leggo len e msg
+        // len lo facciamo un po più grande: 5 digit
+    tmpBuff = realloc(tmpBuff, 5); // adesso può contenere 5 decimali
+    strncpy(tmpBuff, buffer + charsRead, 5);
+    charsRead += 5;
+    msg_T->msglen = atoi(tmpBuff);
+    bzero(tmpBuff, 5);
+
+
+    if(msg_T->msglen != 0) {
+        lenToAllocate = sizeof(char) * msg_T->msglen;
+        tmpBuff = realloc(tmpBuff, lenToAllocate); //adesso buff può contenere char * len
+        strncpy(tmpBuff, buffer + charsRead, msg_T->msglen);
+        msg_T->msg = malloc(lenToAllocate);
+        msg_T->msg = strdup(tmpBuff);
+    }
+
+    bzero(tmpBuff, lenToAllocate);
             // ORA TUTTO IL MESSAGGIO È STATO MESSO DENTRO LA STRUTTURA
 
 /*        printf("type: %c\n", msg_T->type);
@@ -318,7 +318,4 @@ void readAndLoadFromSocket(int sock, int len) {
         printf("msglen: %d\n", msg_T->msglen);
         printf("mesg: %s\n\n", msg_T->msg);*/
 
-    } else {
-        isLogout = true;
     }
-}

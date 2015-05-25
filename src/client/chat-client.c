@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
         // qualunque sia il comando inviato, devo aspettare un messaggio
         // di risposta ( MSG_OK || MSG_ERROR ) dal server
 
-        if(read(sockId, buffRisp, sizeof(char) )< 0) {
+        if(read(sockId, buffRisp, sizeof(char)) < 0) {
             printf("[!] Error contacting the server\n");
         } else {
             if (buffRisp[0] == MSG_ERROR) {

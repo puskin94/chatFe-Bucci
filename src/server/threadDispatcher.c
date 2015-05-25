@@ -226,4 +226,7 @@ void initStruct() {
     BufferPC->readpos = 0;
     BufferPC->writepos = 0;
     BufferPC->count = 0;
+    pthread_mutex_init(&BufferPC->buffMux, NULL);
+    pthread_cond_init(&BufferPC->FULL, NULL);
+    pthread_cond_init(&BufferPC->EMPTY, NULL);
 }
