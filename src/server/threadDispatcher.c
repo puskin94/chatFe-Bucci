@@ -33,9 +33,9 @@ typedef struct {
     char *message[K];
     char *receiver[K];
     char *sender[K];
-    pthread_mutex_t buffMux;
     int readpos, writepos;
     int count;
+    pthread_mutex_t buffMux;
     pthread_cond_t FULL;
     pthread_cond_t EMPTY;
 } buffStruct;
@@ -53,7 +53,6 @@ void *launchThreadDispatcher() {
 
     hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
 
-
     sendBuffer = malloc(sizeof(char));
 
     logMsg = malloc(sizeof(char));
@@ -67,13 +66,17 @@ void *launchThreadDispatcher() {
 
         isBrd = readFromBufferPC(&sender, &receiver, &msg);
 
+
+    printf("sender:%zu\nreceiver:%zu\nmsg:%zu\n", strlen(sender), strlen(receiver), strlen(msg));
+
         userName = strtok(receiver, ":");
+
+        printf("userName:%zu\n", strlen(userName));
 
         do {
             receiverId = returnSockId(userName, hashUser);
 
             if (!isBrd) {
-
                 sendBuffer = realloc(sendBuffer, 6 + strlen(sender) + 1 + strlen(userName) + 1 + strlen(msg));
                 sprintf(sendBuffer, "%06zu%s:%s:%s", strlen(sender) + 1 + strlen(userName) + 1 + strlen(msg),
                                                     sender,
@@ -93,7 +96,7 @@ void *launchThreadDispatcher() {
 
 
             // scrivo sul log file i messaggi
-            logMsg = realloc(logMsg, (strlen(sender) + strlen(userName) + strlen(msg)) + 2);
+            logMsg = realloc(logMsg, sizeof(sender) + sizeof(userName) + sizeof(msg) + 2);
             sprintf(logMsg, "%s:%s:%s", sender, userName, msg);
             buildLog(logMsg, 0);
 
@@ -143,7 +146,6 @@ bool readFromBufferPC(char **sender, char **receiver, char **msg) {
     BufferPC->count--;
 
     pthread_mutex_unlock(&BufferPC->buffMux);
-
 
     free(tmpBuff);
     return isBrd;

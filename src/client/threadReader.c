@@ -32,7 +32,6 @@ void *launchThreadReader(void *newConn) {
     bool loggedOut = false;
 
     size_t msgLen = 0;
-    ssize_t lenRead;
 
 
     /* la dimensione del messaggio viene allocata dinamicamente con la funzione getline.
@@ -40,7 +39,7 @@ void *launchThreadReader(void *newConn) {
         ogni volta che veniva premuto un tasto. Questo rendeva la quantità
         di realloc veramente alta ammazzando le performances del client.
     */
-    while(!loggedOut && ((lenRead = getline(&msg, &msgLen, stdin)) != -1 )) {
+    while(!loggedOut && (getline(&msg, &msgLen, stdin) != -1 )) {
 
         msg[strcspn(msg, "\n")] = 0;
 

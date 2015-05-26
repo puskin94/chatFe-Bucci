@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include <signal.h>
 
+
 #include "include/chat-server.h"
 #include "include/utils.h"
 #include "include/hash.h"
@@ -35,7 +36,6 @@ void writeToLog(char *message) {
 includendo timestamp ed il messaggio stesso. Il messaggio viene stampato
 anche su STDERR al variare dell' intero 'action' */
 void buildLog(char *message, int action) {
-
 
     // if action == 0 -> normal message
     // if action == 1 -> error message
