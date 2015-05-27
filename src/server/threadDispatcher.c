@@ -66,12 +66,8 @@ void *launchThreadDispatcher() {
 
         isBrd = readFromBufferPC(&sender, &receiver, &msg);
 
-
-    printf("sender:%zu\nreceiver:%zu\nmsg:%zu\n", strlen(sender), strlen(receiver), strlen(msg));
-
         userName = strtok(receiver, ":");
 
-        printf("userName:%zu\n", strlen(userName));
 
         do {
             receiverId = returnSockId(userName, hashUser);
@@ -89,9 +85,11 @@ void *launchThreadDispatcher() {
                                                     msg);
             }
 
+
+            printf("%s\n", sendBuffer);
             if(send(receiverId , sendBuffer , strlen(sendBuffer), 0) < 0) {
-                    logMsg = strdup("[!] Cannot send Infos to the client!");
-                    buildLog(logMsg, 1);
+                logMsg = strdup("[!] Cannot send Infos to the client!");
+                buildLog(logMsg, 1);
             }
 
 

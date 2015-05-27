@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "include/utils.h"
 #include "include/threadReader.h"
@@ -72,7 +73,7 @@ int main(int argc, char *argv[]) {
 
     // Queste sono le varie casistiche ammesse
 
-    if ( ((strcmp(argv[1], "-r") == 0) && argc == 4) || (argc == 2)) {
+    if (((strcmp(argv[1], "-r") == 0) && argc == 4) || (argc == 2)) {
 
         // Il client prova a connettersi al server remoto per un massimo di
         // MAXCONNTENT volte
@@ -154,7 +155,9 @@ int main(int argc, char *argv[]) {
                 lenMsg = sizeof(char) * atoi(buffRisp);
 
                 // rialloco la dimensione del buffer di conseguenza
-                buffRisp = realloc(buffRisp, lenMsg);
+                buffRisp = realloc(buffRisp, lenMsg + 1);
+                buffRisp[lenMsg] = '\0';
+
                 // ora sono pronto a leggere la risposta
                 read(sockId, buffRisp, lenMsg);
                 printf("[!] %s\n", buffRisp);
@@ -180,7 +183,14 @@ int main(int argc, char *argv[]) {
             return -3;
         }
 
+        /* se termina prima il threadListener vuol dire che il server è stato chiuso
+        (volontariamente). In questo caso viene ucciso anche il threadReader.
+        Se invece termina prima il threadReader vuol dire che l'utente
+        ha eseguito il comando di logout; dopo il suo join viene chiuso tutto
+        il processo */
         pthread_join(threadListener, NULL);
+        printf("adesso killo\n");
+        pthread_kill(threadReader, 9);
         pthread_join(threadReader, NULL);
 
     }

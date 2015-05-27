@@ -11,7 +11,6 @@ bool createLogFile();
 void writeToLog(char *message);
 void timestamp(char * ts);
 void buildLog(char *message, int action);
-void saveTable();
 
 /* Fine della dichiarazione */
 

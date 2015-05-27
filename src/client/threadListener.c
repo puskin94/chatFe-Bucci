@@ -30,6 +30,7 @@ void *launchThreadListener(void *newConn) {
     int len;
 
     char *buffer = malloc(sizeof(char) * 6);
+    bzero(buffer, 6 * sizeof(char));
 
     while(go && !loggedOut && (read(sock, buffer, sizeof(char) * 6) > 0)) {
 
@@ -39,22 +40,22 @@ void *launchThreadListener(void *newConn) {
             // pulisco il buffer
             bzero(buffer, 6);
             // lo rialloco della grandezza necessaria
-            buffer = realloc(buffer, len * sizeof(char));
+            buffer = realloc(buffer, len * sizeof(char) + 1);
+            buffer[len] = '\0';
             // leggo dal socket
             read(sock, buffer, len);
             // stampo il messaggio formattato con una tabulazione
             printf("\t%s\n", buffer);
 
+            // pulisco e rialloco il buffer prima di riutilizzarlo
+            bzero(buffer, len);
+            buffer = realloc(buffer, sizeof(char) * 6);
+
 
         } else {
             loggedOut = true;
         }
-
-        // pulisco e rialloco il buffer prima di riutilizzarlo
-        bzero(buffer, len);
-        buffer = realloc(buffer, sizeof(char) * 6);
     }
 
     pthread_exit(NULL);
-
 }

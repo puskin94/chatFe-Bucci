@@ -13,5 +13,6 @@ int loginUser(char *user, hdata_t *bs, int sock);
 int returnSockId(char *user, hdata_t *bs);
 void listUser(char **tmpBuff);
 void logout(char *user, hdata_t *bs);
+void saveTable();
 
 #endif

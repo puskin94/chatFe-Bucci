@@ -20,6 +20,7 @@
 
 static hash_t HASH_TABLE;
 static lista OnUser;
+static lista NewUser;
 
 bool isInTable(char *user) {
     return (CERCAHASH(user, HASH_TABLE) == NULL) ? false : true;
@@ -47,6 +48,7 @@ bool readUserFile() {
 
         HASH_TABLE = CREAHASH();
         OnUser = CREALISTA();
+        NewUser = CREALISTA();
 
         while (fgets (userInfo, sizeof(userInfo), fp)) {
 
@@ -94,6 +96,13 @@ bool registerNewUser(char *msg, hdata_t *user) {
         user->sockid = -1;
 
         INSERISCIHASH(user->uname, (void*) user, HASH_TABLE);
+
+        /* inserisco il nuovo utente in una lista apposita che contiene
+        lo username di tutti gli utenti che si sono registrati dall'ultima
+        accensione del server */
+        posizione lastElem = ULTIMOLISTA(NewUser);
+        INSLISTA(user->uname, &lastElem);
+
         return true;
     }
     return false;
@@ -149,13 +158,14 @@ void logout(char *user, hdata_t *bs) {
     buildLog(msg, 0);
 }
 
-
-// questa funzione non funziona
-
 void listUser(char **tmpBuff) {
     bool isFirst = true;
     char *buff;
 
+    /* la funzione modifica un buffer che gli viene passato come argomento.
+    Questo conterrà la lista degli utenti connessi separati da il simbolo ":".
+    La lista sarà preceduta da 6 digit che serviranno al client per leggere
+    il messaggio una volta sola e di elaborarlo in locale.*/
     posizione el = PRIMOLISTA(OnUser);
 
     while (PREDLISTA(el) != ULTIMOLISTA(OnUser)) {
@@ -173,4 +183,32 @@ void listUser(char **tmpBuff) {
     *tmpBuff = malloc(6 + strlen(buff));
     sprintf(*tmpBuff, "%06zu%s", strlen(buff), buff);
 
+}
+
+void saveTable() {
+
+    FILE *fp;
+
+    /* viene aperto il file in modalità 'append'. Il file quindi non viene
+    sovrascritto ma viene invece 'aggiornato' con nuove informazioni */
+    fp = fopen(userFile, "a");
+    if (fp != NULL) {
+
+        posizione elem = PRIMOLISTA(NewUser);
+        hdata_t *bs = NULL;
+
+        // scorro tutta la lista dei nuovi utenti
+        while (PREDLISTA(elem) != ULTIMOLISTA(NewUser)) {
+            if ((bs = CERCAHASH(elem->elemento, HASH_TABLE)) != NULL) {
+                // stampo i dati di ogni utente nel file
+                fprintf(fp, "%s:%s:%s\n", bs->uname,
+                                            bs->fullname,
+                                            bs->email);
+
+                elem = SUCCLISTA(elem);
+            }
+        }
+
+    }
+    fclose(fp);
 }

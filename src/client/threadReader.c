@@ -56,7 +56,7 @@ void *launchThreadReader(void *newConn) {
 
                 // se il messaggio è broadcast
                 if (strCpy[6] == ':') {
-                    numChars = (18 + strlen(msgText));
+                    numChars = (18 + sizeof(msgText));
                     msgToSend = realloc(msgToSend, numChars * sizeof(char));
 
                     sprintf(msgToSend, "%06d%c000000%05zu%s", numChars-6,
@@ -65,21 +65,26 @@ void *launchThreadReader(void *newConn) {
                 } else {
                     // se il messaggio è privato
                     msgTo = strdup(strtok(cmd, " ")); msgTo = strdup(strtok(NULL, " "));
-                    numChars = (18 + strlen(msgTo) + strlen(msgText));
+                    numChars = (18 + sizeof(msgTo) + sizeof(msgText));
                     msgToSend = realloc(msgToSend, numChars * sizeof(char));
 
                     sprintf(msgToSend, "%06d%c000%03zu%s%05zu%s", numChars-6,
                         MSG_SINGLE, strlen(msgTo), msgTo, strlen(msgText), msgText);
+
                 }
             } else if (strncmp(msg, "#logout", 7) == 0) {
+
                 numChars = 18;
                 msgToSend = realloc(msgToSend, numChars * sizeof(char));
                 sprintf(msgToSend, "%06d%c00000000000", numChars-6, MSG_LOGOUT);
                 loggedOut = true;
+
             } else if (strncmp(msg, "#ls", 3) == 0) {
+
                 numChars = 18;
                 msgToSend = realloc(msgToSend, numChars * sizeof(char));
                 sprintf(msgToSend, "%06d%c00000000000", numChars-6, MSG_LIST);
+
             }
 
 
