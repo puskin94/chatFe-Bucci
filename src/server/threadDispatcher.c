@@ -73,28 +73,26 @@ void *launchThreadDispatcher() {
             receiverId = returnSockId(userName, hashUser);
 
             if (!isBrd) {
-                sendBuffer = realloc(sendBuffer, 6 + strlen(sender) + 1 + strlen(userName) + 1 + strlen(msg));
+                sendBuffer = realloc(sendBuffer, 6 + strlen(sender) + 1 + strlen(userName) + 2 + strlen(msg));
                 sprintf(sendBuffer, "%06zu%s:%s:%s", strlen(sender) + 1 + strlen(userName) + 1 + strlen(msg),
                                                     sender,
                                                     userName,
                                                     msg);
             } else {
-                sendBuffer = realloc(sendBuffer, 6 + strlen(sender) + 3 + strlen(msg));
+                sendBuffer = realloc(sendBuffer, 6 + strlen(sender) + 4 + strlen(msg));
                 sprintf(sendBuffer, "%06zu%s:*:%s", strlen(sender) + 3 + strlen(msg),
                                                     sender,
                                                     msg);
             }
 
 
-            printf("%s\n", sendBuffer);
             if(send(receiverId , sendBuffer , strlen(sendBuffer), 0) < 0) {
                 logMsg = strdup("[!] Cannot send Infos to the client!");
                 buildLog(logMsg, 1);
             }
 
-
-            // scrivo sul log file i messaggi
-            logMsg = realloc(logMsg, sizeof(sender) + sizeof(userName) + sizeof(msg) + 2);
+            // scrivo sul log-file i messaggi
+            logMsg = realloc(logMsg, sizeof(sender) + sizeof(userName) + sizeof(msg) + 3);
             sprintf(logMsg, "%s:%s:%s", sender, userName, msg);
             buildLog(logMsg, 0);
 

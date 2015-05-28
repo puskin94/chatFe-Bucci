@@ -111,22 +111,24 @@ void sighand(int sig) {
         connect(sockId, (struct sockaddr *)&closeConn, sizeof(closeConn));
 
         listUser(&tmpBuff);
-        receiver = strndup(tmpBuff + 6, strlen(tmpBuff) - 6);
+        if (strlen(tmpBuff) != 0) {
+            receiver = strndup(tmpBuff + 6, strlen(tmpBuff) - 6);
 
-        userName = strtok(receiver, ":");
-        msg = strdup(P_LOGOUT);
+            userName = strtok(receiver, ":");
+            msg = strdup(P_LOGOUT);
 
 
-        do {
-            receiverId = returnSockId(userName, hashUser);
+            do {
+                receiverId = returnSockId(userName, hashUser);
 
-            if(send(receiverId , msg , strlen(msg), 0) < 0) {
-                logMsg = strdup("[!] Cannot send Shutdown message to the clients");
-                buildLog(logMsg, 1);
-            }
+                if(send(receiverId , msg , strlen(msg), 0) < 0) {
+                    logMsg = strdup("[!] Cannot send Shutdown message to the clients");
+                    buildLog(logMsg, 1);
+                }
 
-            userName = strtok(NULL, ":");
-        } while (userName != NULL);
+                userName = strtok(NULL, ":");
+            } while (userName != NULL);
+        }
 
         close(sockId);
 

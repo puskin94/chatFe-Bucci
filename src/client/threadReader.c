@@ -56,7 +56,7 @@ void *launchThreadReader(void *newConn) {
 
                 // se il messaggio è broadcast
                 if (strCpy[6] == ':') {
-                    numChars = (18 + sizeof(msgText));
+                    numChars = (18 + strlen(msgText));
                     msgToSend = realloc(msgToSend, numChars * sizeof(char));
 
                     sprintf(msgToSend, "%06d%c000000%05zu%s", numChars-6,
@@ -65,7 +65,7 @@ void *launchThreadReader(void *newConn) {
                 } else {
                     // se il messaggio è privato
                     msgTo = strdup(strtok(cmd, " ")); msgTo = strdup(strtok(NULL, " "));
-                    numChars = (18 + sizeof(msgTo) + sizeof(msgText));
+                    numChars = (18 + strlen(msgTo) + strlen(msgText));
                     msgToSend = realloc(msgToSend, numChars * sizeof(char));
 
                     sprintf(msgToSend, "%06d%c000%03zu%s%05zu%s", numChars-6,

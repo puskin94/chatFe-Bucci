@@ -174,13 +174,14 @@ void listUser(char **tmpBuff) {
             strcat(buff, ":");
             strcat(buff, el->elemento);
         } else {
-            buff = malloc(strlen(el->elemento) * sizeof(char));
+            buff = malloc(sizeof(el->elemento) * sizeof(char));
+            bzero(buff, strlen(el->elemento) * sizeof(char));
             strcat(buff, el->elemento);
             isFirst = false;
         }
         el = SUCCLISTA(el);
     }
-    *tmpBuff = malloc(6 + strlen(buff));
+    *tmpBuff = malloc(6 + sizeof(buff));
     sprintf(*tmpBuff, "%06zu%s", strlen(buff), buff);
 
 }

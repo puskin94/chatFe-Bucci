@@ -44,7 +44,7 @@ void buildLog(char *message, int action) {
     char *errorMsg;
 
     timestamp(ts);
-    errorMsg = malloc((strlen(ts) + strlen(message) + 2) * sizeof(char));
+    errorMsg = malloc((strlen(ts) + strlen(message) + 3) * sizeof(char));
     sprintf(errorMsg, "%s:%s\n", ts, message);
 
     if (action == 1) {

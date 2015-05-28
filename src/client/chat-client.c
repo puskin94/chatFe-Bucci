@@ -189,7 +189,6 @@ int main(int argc, char *argv[]) {
         ha eseguito il comando di logout; dopo il suo join viene chiuso tutto
         il processo */
         pthread_join(threadListener, NULL);
-        printf("adesso killo\n");
         pthread_kill(threadReader, 9);
         pthread_join(threadReader, NULL);
 

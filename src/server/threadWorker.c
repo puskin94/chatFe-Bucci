@@ -101,6 +101,7 @@ void *launchThreadWorker(void *newConn) {
         // di messaggi tra client e server. Viene eseguito solamente se il server
         // ha risposto affermativamente al comando iniziale inviato dal client
         while (success == 0 && (read(sock, buff, sizeof(char) * 6) > 0)) {
+
             readAndLoadFromSocket(sock, atoi(buff));
 
             if (msg_T->type == MSG_LIST) {
@@ -312,4 +313,4 @@ void readAndLoadFromSocket(int sock, int len) {
         printf("msglen: %d\n", msg_T->msglen);
         printf("mesg: %s\n\n", msg_T->msg);*/
 
-    }
+}
