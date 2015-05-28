@@ -96,6 +96,7 @@ void *launchThreadDispatcher() {
             sprintf(logMsg, "%s:%s:%s", sender, userName, msg);
             buildLog(logMsg, 0);
 
+
             // prendo l'username seguente
             userName = strtok(NULL, ":");
 
@@ -130,8 +131,10 @@ bool readFromBufferPC(char **sender, char **receiver, char **msg) {
         // per l'invio ( richiesta #ls ). Per adattarla allo scopo di questa funzione
         // bisogna utilizzare il suo contenuto dal settimo byte in poi
         listUser(&tmpBuff);
+        *receiver = realloc(*receiver, strlen(tmpBuff+6));
+        bzero(*receiver, strlen(tmpBuff+6));
+        strcpy(*receiver, tmpBuff+6);
 
-        *receiver = strndup(tmpBuff + 6, strlen(tmpBuff) - 6);
         isBrd = true;
     }
 

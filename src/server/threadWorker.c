@@ -195,7 +195,7 @@ void buildMsgForSocket(int success, char **tmpBuff) {
     success == -3 -> login fallito ( utente già loggato )
     */
 
-    *tmpBuff = malloc(sizeof(char));
+    *tmpBuff = malloc(sizeof(char) * 2);
 
     switch(success) {
         case 0:

@@ -77,19 +77,18 @@ int main(int argc, char *argv[]) {
 
 void sighand(int sig) {
 
-    int sockId, receiverId;
-    char *msg, *userName, *receiver, *tmpBuff, *logMsg;
-    struct sockaddr_in closeConn;
-
-    hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
-
-    tmpBuff = malloc(sizeof(char));
-    receiver = malloc(sizeof(char));
-    userName = malloc(sizeof(char));
-
-
-
     if ( sig == SIGINT || sig == SIGTERM ) {
+
+        int sockId, receiverId;
+        char *msg, *userName, *receiver, *tmpBuff, *logMsg;
+        struct sockaddr_in closeConn;
+
+        hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
+
+        tmpBuff = malloc(sizeof(char));
+        receiver = malloc(sizeof(char));
+        userName = malloc(sizeof(char));
+
         go = false;
 
         // saveTable appende al file degli utenti, i dati degli utenti registrati
@@ -131,8 +130,8 @@ void sighand(int sig) {
         }
 
         close(sockId);
-
+        printf("[!] Server Shutdown...\n");
+        free(msg); free(userName); free(receiver); free(tmpBuff); free(logMsg);
     }
 
-    free(msg); free(userName); free(receiver); free(tmpBuff); free(logMsg);
 }

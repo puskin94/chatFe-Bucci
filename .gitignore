@@ -1,1 +1,2 @@
-obj/*
+src/server/obj/*
+src/client/obj/*

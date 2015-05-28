@@ -22,12 +22,16 @@ static hash_t HASH_TABLE;
 static lista OnUser;
 static lista NewUser;
 
+static pthread_mutex_t userMux = PTHREAD_MUTEX_INITIALIZER;
+
 bool isInTable(char *user) {
     return (CERCAHASH(user, HASH_TABLE) == NULL) ? false : true;
 }
 
 int returnSockId(char *user, hdata_t *bs) {
+    pthread_mutex_lock(&userMux);
     bs = CERCAHASH(user, HASH_TABLE);
+    pthread_mutex_unlock(&userMux);
     return bs->sockid;
 }
 
@@ -73,6 +77,7 @@ bool readUserFile() {
         return false;
     }
 
+    free(userName); free(fullName); free(mail);
     fclose(fp);
     return true;
 
@@ -85,6 +90,7 @@ bool registerNewUser(char *msg, hdata_t *user) {
 
     userName = strdup(strtok(msg, ":"));
 
+    pthread_mutex_lock(&userMux);
     // se il nome utente non è ancora stato usato
     if (!isInTable(userName)) {
         fullName = strdup(strtok(NULL, ":"));
@@ -103,8 +109,11 @@ bool registerNewUser(char *msg, hdata_t *user) {
         posizione lastElem = ULTIMOLISTA(NewUser);
         INSLISTA(user->uname, &lastElem);
 
+        free(userName); free(fullName); free(mail);
+        pthread_mutex_unlock(&userMux);
         return true;
     }
+    pthread_mutex_unlock(&userMux);
     return false;
 }
 
@@ -113,12 +122,14 @@ int loginUser(char *user, hdata_t *bs, int sock) {
     // se l'username è presente e non è ancora loggato, ritorna 0
     // se l'username non è presente, ritorna -2
     // se l'utente è presente ma è già loggato, ritorna -3
-    char msg[100];
+    char *msg;
 
+    pthread_mutex_lock(&userMux);
     bs = CERCAHASH(user, HASH_TABLE);
     posizione lastElem = ULTIMOLISTA(OnUser);
     if (bs == NULL) {
         buildLog("Username not Found", 0);
+        pthread_mutex_unlock(&userMux);
         return -2;
     } else if (bs->sockid == -1) {
         // modifico il sockid nella hashtable
@@ -126,18 +137,22 @@ int loginUser(char *user, hdata_t *bs, int sock) {
         // ed inserisco l'utente nella lista
         INSLISTA(user, &lastElem);
 
-        strcpy(msg, user);
-        strcat(msg, " has logged");
+        msg = malloc(strlen(user) + 15);
+        sprintf(msg, "%s has logged in", user);
         buildLog(msg, 0);
+        free(msg);
+        pthread_mutex_unlock(&userMux);
         return 0;
     }
+    pthread_mutex_unlock(&userMux);
     return -3;
 }
 
 void logout(char *user, hdata_t *bs) {
 
-    char msg[100];
+    char *msg;
     bool deleted = false;
+    pthread_mutex_lock(&userMux);
     posizione el = PRIMOLISTA(OnUser);
 
     // prima cambio il suo sockid nella Hash_Table
@@ -153,9 +168,11 @@ void logout(char *user, hdata_t *bs) {
         el = SUCCLISTA(el);
     }
     // scrivo nel log-file che l'utente si è disconnesso
-    strcpy(msg, user);
-    strcat(msg, " has logged out");
+    msg = malloc(strlen(user) + 16);
+    sprintf(msg, "%s has logged out", user);
     buildLog(msg, 0);
+    pthread_mutex_unlock(&userMux);
+    free(msg);
 }
 
 void listUser(char **tmpBuff) {
@@ -166,6 +183,7 @@ void listUser(char **tmpBuff) {
     Questo conterrà la lista degli utenti connessi separati da il simbolo ":".
     La lista sarà preceduta da 6 digit che serviranno al client per leggere
     il messaggio una volta sola e di elaborarlo in locale.*/
+    pthread_mutex_lock(&userMux);
     posizione el = PRIMOLISTA(OnUser);
 
     while (PREDLISTA(el) != ULTIMOLISTA(OnUser)) {
@@ -184,6 +202,8 @@ void listUser(char **tmpBuff) {
     *tmpBuff = malloc(7 + sizeof(buff));
     sprintf(*tmpBuff, "%06zu%s", strlen(buff), buff);
 
+    pthread_mutex_unlock(&userMux);
+    free(buff);
 }
 
 void saveTable() {

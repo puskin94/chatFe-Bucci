@@ -2,8 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <arpa/inet.h>
+#include <pthread.h>
 #include <signal.h>
 
 
@@ -11,6 +16,8 @@
 #include "include/utils.h"
 #include "include/hash.h"
 
+
+static pthread_mutex_t logMux = PTHREAD_MUTEX_INITIALIZER;
 
 // funzione suggerita in classe per la creazione di un timestamp
 
@@ -25,10 +32,12 @@ void timestamp(char * ts) {
 void writeToLog(char *message) {
 
     FILE *fp;
+    pthread_mutex_lock(&logMux);
     fp = fopen(logFile, "a");
 
     fprintf(fp,"%s", message);
     fclose(fp);
+    pthread_mutex_unlock(&logMux);
 
 }
 
@@ -52,6 +61,7 @@ void buildLog(char *message, int action) {
     }
 
     writeToLog(errorMsg);
+    free(errorMsg);
 
 }
 
