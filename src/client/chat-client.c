@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
 
             if (sscanf(argv[2], "%s %s %s", name, surname, mail ) == 3) {
 
-                buffSize = 21+strlen(argv[3])+strlen(name)+strlen(surname)+strlen(mail);
+                buffSize = 22+strlen(argv[3])+strlen(name)+strlen(surname)+strlen(mail);
                 /*
                 21 ==
                     6 = dimensione dell'intero messaggio
@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
         } else if (argc == 2) {
             // ultimo caso: se è presente un solo parametro, deve essere per forza il login
             lenMsg = strlen(argv[1]);
-            buffSize = 18 + lenMsg;
+            buffSize = 19 + lenMsg;
             /*
             18 ==
                 6 = dimensione dell'intero messaggio

@@ -69,11 +69,11 @@ bool createLogFile() {
     char *firstMessage;
     timestamp(ts);
 
-    firstMessage = malloc((strlen(delimiter) * 2 +
+    firstMessage = malloc(((strlen(delimiter) * 2 +
                             strlen(semiDelimiterL) +
                             strlen(semiDelimiterR) +
                             strlen(ts) +
-                            strlen("Server Started @ ")) + 1 * sizeof(char));
+                            strlen("Server Started @ ")) + 2) * sizeof(char));
 
     sprintf(firstMessage, "%s%sServer Started @ %s%s\n%s",
                                                 delimiter,

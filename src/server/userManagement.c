@@ -181,7 +181,7 @@ void listUser(char **tmpBuff) {
         }
         el = SUCCLISTA(el);
     }
-    *tmpBuff = malloc(6 + sizeof(buff));
+    *tmpBuff = malloc(7 + sizeof(buff));
     sprintf(*tmpBuff, "%06zu%s", strlen(buff), buff);
 
 }

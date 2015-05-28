@@ -156,7 +156,7 @@ void msgForDispatcher(char *sender, char **tmpBuff) {
             <lunghezza di tutto il messaggio><tipo><lunghezza del receiver>
             <receiver><lunghezza del messaggio><messaggio>
             */
-            *tmpBuff = realloc(*tmpBuff, (12 + strlen(msg_T->receiver) + strlen(sender) + msg_T->msglen) * sizeof(char));
+            *tmpBuff = realloc(*tmpBuff, (13 + strlen(msg_T->receiver) + strlen(sender) + msg_T->msglen) * sizeof(char));
             sprintf(*tmpBuff, "%c%03zu%s%03zu%s%05d%s", msg_T->type,
                                                         strlen(msg_T->receiver),
                                                         msg_T->receiver,
@@ -170,7 +170,7 @@ void msgForDispatcher(char *sender, char **tmpBuff) {
         }
     } else {
         // se il messaggio è di tipo MSG_BRDCAST
-        *tmpBuff = realloc(*tmpBuff, (9 + msg_T->msglen + strlen(sender)) * sizeof(char));
+        *tmpBuff = realloc(*tmpBuff, (10 + msg_T->msglen + strlen(sender)) * sizeof(char));
         sprintf(*tmpBuff, "%c%03zu%s%05d%s", msg_T->type,
                                             strlen(sender),
                                             sender,
@@ -202,19 +202,19 @@ void buildMsgForSocket(int success, char **tmpBuff) {
             sprintf(*tmpBuff,"%c", MSG_OK);
             break;
         case 1:
-            *tmpBuff = realloc(*tmpBuff, sizeof(char) * 6);
+            *tmpBuff = realloc(*tmpBuff, sizeof(char) * 7);
             sprintf(*tmpBuff,"00000%c", MSG_OK);
             break;
         case -1:
-            *tmpBuff = realloc(*tmpBuff, sizeof(char) * 61);
+            *tmpBuff = realloc(*tmpBuff, sizeof(char) * 62);
             sprintf(*tmpBuff,"%c057Error during Registration... ( username already taken ? )", MSG_ERROR);
             break;
         case -2:
-            *tmpBuff = realloc(*tmpBuff, sizeof(char) * 44);
+            *tmpBuff = realloc(*tmpBuff, sizeof(char) * 45);
             sprintf(*tmpBuff,"%c040Error during Login... Username not found", MSG_ERROR);
             break;
         case -3:
-            *tmpBuff = realloc(*tmpBuff, sizeof(char) * 27);
+            *tmpBuff = realloc(*tmpBuff, sizeof(char) * 28);
             sprintf(*tmpBuff, "%c023You are already Logged!", MSG_ERROR);
             break;
     }
