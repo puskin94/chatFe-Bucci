@@ -73,11 +73,11 @@ bool readUserFile() {
             }
         }
     } else {
-        buildLog("Cannot load userFile. Quitting...", 1);
-        return false;
+        buildLog("File doesn't exixst... Creating it", 1);
+        fp = fopen(userFile, "w");
+        readUserFile();
     }
 
-    free(userName); free(fullName); free(mail);
     fclose(fp);
     return true;
 
