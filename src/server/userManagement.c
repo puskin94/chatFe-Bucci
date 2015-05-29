@@ -51,8 +51,8 @@ bool readUserFile() {
 
     fp = fopen(userFile, "r+");
     if (fp == NULL) {
-        buildLog("Cannot load userFile. Quitting...", 1);
-        return false;
+        fp = fopen(userFile, "w");
+        readUserFile();
     }
 
     HASH_TABLE = CREAHASH();
@@ -78,7 +78,6 @@ bool readUserFile() {
         }
     }
 
-    free(userName); free(fullName); free(mail);
     fclose(fp);
     return true;
 
