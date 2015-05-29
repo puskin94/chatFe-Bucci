@@ -60,9 +60,6 @@ void *launchThreadWorker(void *newConn) {
     tmpBuff = malloc(sizeof(char));
 
 
-    hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
-
-
     // Viene ricevuto il messaggio e controllato quale servizio
     // viene richiesto
 
@@ -75,13 +72,13 @@ void *launchThreadWorker(void *newConn) {
 
         // leggere i commenti di 'buildMsgForSocket()''
         if (msg_T->type == MSG_REGLOG &&
-            !(registerNewUser(msg_T->msg, hashUser) &&
-                loginUser(userName, hashUser, sock) == 0)) {
+            !(registerNewUser(msg_T->msg) &&
+                loginUser(userName, sock) == 0)) {
 
             success = -1;
         } else if (msg_T->type == MSG_LOGIN) {
 
-            success = loginUser(userName, hashUser, sock);
+            success = loginUser(userName, sock);
         }
 
         buildMsgForSocket(success, &tmpBuff);
@@ -115,17 +112,17 @@ void *launchThreadWorker(void *newConn) {
 
             } else if (msg_T->type == MSG_BRDCAST || msg_T->type == MSG_SINGLE) {
                 // tmpBuff conterrà il messaggio da spedire al threadDispatcher
+                pthread_mutex_lock(&mux);
                 msgForDispatcher(userName, &tmpBuff);
 
                 if (tmpBuff[0] != MSG_ERROR) {
-                    pthread_mutex_lock(&mux);
                     // viene copiato il messaggio dentro bufferPC
                     writeOnBufferPC(tmpBuff);
-                    pthread_mutex_unlock(&mux);
                 }
+                pthread_mutex_unlock(&mux);
 
             } else if (msg_T->type == MSG_LOGOUT) {
-                logout(userName, hashUser);
+                logout(userName);
                 buildMsgForSocket(1, &tmpBuff);
                 // avverto il client che la disconnessione è avvenuta con successo
                 if(send(sock , tmpBuff , strlen(tmpBuff) , 0) < 0) {

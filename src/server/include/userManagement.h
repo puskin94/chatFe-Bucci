@@ -7,12 +7,12 @@
 #include "lista.h"
 
 bool readUserFile();
-bool registerNewUser(char *msg, hdata_t *user);
+bool registerNewUser(char *msg);
 bool isInTable(char *user);
-int loginUser(char *user, hdata_t *bs, int sock);
+int loginUser(char *user, int sock);
 int returnSockId(char *user, hdata_t *bs);
 void listUser(char **tmpBuff);
-void logout(char *user, hdata_t *bs);
+void logout(char *user);
 void saveTable();
 
 #endif

@@ -77,18 +77,19 @@ int main(int argc, char *argv[]) {
 
 void sighand(int sig) {
 
+    int sockId, receiverId;
+    char *msg, *userName, *receiver, *tmpBuff, *logMsg;
+    struct sockaddr_in closeConn;
+
+    hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
+
+    tmpBuff = malloc(sizeof(char));
+    receiver = malloc(sizeof(char));
+    userName = malloc(sizeof(char));
+
+
+
     if ( sig == SIGINT || sig == SIGTERM ) {
-
-        int sockId, receiverId;
-        char *msg, *userName, *receiver, *tmpBuff, *logMsg;
-        struct sockaddr_in closeConn;
-
-        hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
-
-        tmpBuff = malloc(sizeof(char));
-        receiver = malloc(sizeof(char));
-        userName = malloc(sizeof(char));
-
         go = false;
 
         // saveTable appende al file degli utenti, i dati degli utenti registrati
@@ -110,28 +111,26 @@ void sighand(int sig) {
         connect(sockId, (struct sockaddr *)&closeConn, sizeof(closeConn));
 
         listUser(&tmpBuff);
-        if (strlen(tmpBuff) != 0) {
-            receiver = strndup(tmpBuff + 6, strlen(tmpBuff) - 6);
+        receiver = strndup(tmpBuff + 6, strlen(tmpBuff) - 6);
 
-            userName = strtok(receiver, ":");
-            msg = strdup(P_LOGOUT);
+        userName = strtok(receiver, ":");
+        msg = strdup(P_LOGOUT);
 
 
-            do {
-                receiverId = returnSockId(userName, hashUser);
+        do {
+            receiverId = returnSockId(userName, hashUser);
 
-                if(send(receiverId , msg , strlen(msg), 0) < 0) {
-                    logMsg = strdup("[!] Cannot send Shutdown message to the clients");
-                    buildLog(logMsg, 1);
-                }
+            if(send(receiverId , msg , strlen(msg), 0) < 0) {
+                logMsg = strdup("[!] Cannot send Shutdown message to the clients");
+                buildLog(logMsg, 1);
+            }
 
-                userName = strtok(NULL, ":");
-            } while (userName != NULL);
-        }
+            userName = strtok(NULL, ":");
+        } while (userName != NULL);
 
         close(sockId);
-        printf("[!] Server Shutdown...\n");
-        free(msg); free(userName); free(receiver); free(tmpBuff); free(logMsg);
+
     }
 
+    free(msg); free(userName); free(receiver); free(tmpBuff); free(logMsg);
 }

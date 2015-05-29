@@ -21,6 +21,8 @@
 static hash_t HASH_TABLE;
 static lista OnUser;
 static lista NewUser;
+static hdata_t *bs;
+
 
 static pthread_mutex_t userMux = PTHREAD_MUTEX_INITIALIZER;
 
@@ -48,81 +50,83 @@ bool readUserFile() {
     hdata_t *user;
 
     fp = fopen(userFile, "r+");
-    if (fp != NULL) {
-
-        HASH_TABLE = CREAHASH();
-        OnUser = CREALISTA();
-        NewUser = CREALISTA();
-
-        while (fgets (userInfo, sizeof(userInfo), fp)) {
-
-            user = (hdata_t *) malloc(sizeof(hdata_t));
-
-            userName = strdup(strtok(userInfo, ":"));
-            fullName = strdup(strtok(NULL, ":"));
-            mail = strdup(strtok(NULL, ":\n"));
-
-            if (userName != NULL && fullName != NULL && mail != NULL) {
-
-                user->uname = userName;
-                user->fullname = fullName;
-                user->email = mail;
-                user->sockid = -1;
-
-                INSERISCIHASH(user->uname, (void*) user, HASH_TABLE);
-            }
-        }
-    } else {
-        buildLog("File doesn't exixst... Creating it", 1);
-        fp = fopen(userFile, "w");
-        readUserFile();
+    if (fp == NULL) {
+        buildLog("Cannot load userFile. Quitting...", 1);
+        return false;
     }
 
+    HASH_TABLE = CREAHASH();
+    OnUser = CREALISTA();
+    NewUser = CREALISTA();
+
+    while (fgets (userInfo, sizeof(userInfo), fp)) {
+
+        user = (hdata_t *) malloc(sizeof(hdata_t));
+
+        userName = strdup(strtok(userInfo, ":"));
+        fullName = strdup(strtok(NULL, ":"));
+        mail = strdup(strtok(NULL, ":\n"));
+
+        if (userName != NULL && fullName != NULL && mail != NULL) {
+
+            user->uname = userName;
+            user->fullname = fullName;
+            user->email = mail;
+            user->sockid = -1;
+
+            INSERISCIHASH(user->uname, (void*) user, HASH_TABLE);
+        }
+    }
+
+    free(userName); free(fullName); free(mail);
     fclose(fp);
     return true;
 
 }
 
-bool registerNewUser(char *msg, hdata_t *user) {
+bool registerNewUser(char *msg) {
 
     // variabili necessarie all'inserimento dei dati nella hash table
     char *userName, *fullName, *mail;
+
+    bs = (hdata_t *) malloc(sizeof(struct msg_t*));
 
     userName = strdup(strtok(msg, ":"));
 
     pthread_mutex_lock(&userMux);
     // se il nome utente non è ancora stato usato
-    if (!isInTable(userName)) {
-        fullName = strdup(strtok(NULL, ":"));
-        mail = strdup(strtok(NULL, ":"));
+    if (isInTable(userName)) {
+        pthread_mutex_unlock(&userMux);
+        return false;
+    }
+    fullName = strdup(strtok(NULL, ":"));
+    mail = strdup(strtok(NULL, ":"));
 
-        user->uname = userName;
-        user->fullname = fullName;
-        user->email = mail;
-        user->sockid = -1;
+    bs->uname = userName;
+    bs->fullname = fullName;
+    bs->email = mail;
+    bs->sockid = -1;
 
-        INSERISCIHASH(user->uname, (void*) user, HASH_TABLE);
+    INSERISCIHASH(bs->uname, (void*)bs, HASH_TABLE);
 
         /* inserisco il nuovo utente in una lista apposita che contiene
         lo username di tutti gli utenti che si sono registrati dall'ultima
         accensione del server */
-        posizione lastElem = ULTIMOLISTA(NewUser);
-        INSLISTA(user->uname, &lastElem);
+    posizione lastElem = ULTIMOLISTA(NewUser);
+    INSLISTA(userName, &lastElem);
 
-        free(userName); free(fullName); free(mail);
-        pthread_mutex_unlock(&userMux);
-        return true;
-    }
     pthread_mutex_unlock(&userMux);
-    return false;
+    return true;
 }
 
-int loginUser(char *user, hdata_t *bs, int sock) {
+int loginUser(char *user, int sock) {
 
     // se l'username è presente e non è ancora loggato, ritorna 0
     // se l'username non è presente, ritorna -2
     // se l'utente è presente ma è già loggato, ritorna -3
     char *msg;
+
+    bs = (hdata_t *) malloc(sizeof(struct msg_t*));
 
     pthread_mutex_lock(&userMux);
     bs = CERCAHASH(user, HASH_TABLE);
@@ -148,10 +152,13 @@ int loginUser(char *user, hdata_t *bs, int sock) {
     return -3;
 }
 
-void logout(char *user, hdata_t *bs) {
+void logout(char *user) {
 
     char *msg;
     bool deleted = false;
+
+    bs = (hdata_t *) malloc(sizeof(struct msg_t*));
+
     pthread_mutex_lock(&userMux);
     posizione el = PRIMOLISTA(OnUser);
 
