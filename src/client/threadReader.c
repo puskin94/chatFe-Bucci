@@ -29,7 +29,7 @@ void *launchThreadReader(void *newConn) {
     char *msgToSend = malloc(sizeof(char));
     char *cmd, *msgText, *msgTo, *strCpy, *msg = NULL;
 
-    bool loggedOut = false;
+    bool loggedOut = false, isGood;
 
     size_t msgLen = 0;
 
@@ -43,6 +43,8 @@ void *launchThreadReader(void *newConn) {
 
         msg[strcspn(msg, "\n")] = 0;
 
+        isGood = false;
+
         if (msg[0] == '#') {
             /* se si tratta di un messaggio '#dest'
             l'interno di questo costrutto costruisce il messaggio e lo spedisce al
@@ -51,28 +53,37 @@ void *launchThreadReader(void *newConn) {
                 // strtok partiziona la stringa... meglio farne una copia
                 strCpy = strdup(msg);
 
-                cmd = strtok(msg, ":");
-                msgText = strdup(strtok(NULL, "\n"));
+                // controlliamo che ci sia effettivamente il carattere ":", senza
+                // questo il messaggio non è valido!
+                if (strchr(strCpy, ':') != NULL) {
 
-                // se il messaggio è broadcast
-                if (strCpy[6] == ':') {
-                    numChars = (19 + strlen(msgText));
-                    msgToSend = realloc(msgToSend, numChars * sizeof(char));
+                    isGood = true;
 
-                    sprintf(msgToSend, "%06d%c000000%05zu%s", numChars-6,
-                        MSG_BRDCAST, strlen(msgText), msgText);
+                    cmd = strtok(msg, ":");
+                    msgText = strdup(strtok(NULL, "\n"));
 
-                } else {
-                    // se il messaggio è privato
-                    msgTo = strdup(strtok(cmd, " ")); msgTo = strdup(strtok(NULL, " "));
-                    numChars = (19 + strlen(msgTo) + strlen(msgText));
-                    msgToSend = realloc(msgToSend, numChars * sizeof(char));
+                    // se il messaggio è broadcast
+                    if (strCpy[6] == ':') {
+                        numChars = (19 + strlen(msgText));
+                        msgToSend = realloc(msgToSend, numChars * sizeof(char));
 
-                    sprintf(msgToSend, "%06d%c000%03zu%s%05zu%s", numChars-6,
-                        MSG_SINGLE, strlen(msgTo), msgTo, strlen(msgText), msgText);
+                        sprintf(msgToSend, "%06d%c000000%05zu%s", numChars-6,
+                            MSG_BRDCAST, strlen(msgText), msgText);
 
+                    } else {
+                        // se il messaggio è privato
+                        msgTo = strdup(strtok(cmd, " ")); msgTo = strdup(strtok(NULL, " "));
+                        numChars = (19 + strlen(msgTo) + strlen(msgText));
+                        msgToSend = realloc(msgToSend, numChars * sizeof(char));
+
+                        sprintf(msgToSend, "%06d%c000%03zu%s%05zu%s", numChars-6,
+                            MSG_SINGLE, strlen(msgTo), msgTo, strlen(msgText), msgText);
+
+                    }
                 }
             } else if (strncmp(msg, "#logout", 7) == 0) {
+
+                isGood = true;
 
                 numChars = 19;
                 msgToSend = realloc(msgToSend, numChars * sizeof(char));
@@ -81,18 +92,22 @@ void *launchThreadReader(void *newConn) {
 
             } else if (strncmp(msg, "#ls", 3) == 0) {
 
+                isGood = true;
+
                 numChars = 19;
                 msgToSend = realloc(msgToSend, numChars * sizeof(char));
                 sprintf(msgToSend, "%06d%c00000000000", numChars-6, MSG_LIST);
 
             }
 
-
-            if(send(sock , msgToSend , numChars , 0) < 0) {
-                fprintf(stderr,"Cannot send the message to the server\n");
+            if (isGood) {
+                if(send(sock , msgToSend , numChars , 0) < 0) {
+                    fprintf(stderr,"Cannot send the message to the server\n");
+                }
+                bzero(msgToSend, numChars);
             }
-
         }
+        bzero(msg, msgLen);
 
     }
 

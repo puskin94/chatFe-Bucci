@@ -91,8 +91,9 @@ void *launchThreadDispatcher() {
                 buildLog(logMsg, 1);
             }
 
+
             // scrivo sul log-file i messaggi
-            logMsg = realloc(logMsg, sizeof(sender) + sizeof(userName) + sizeof(msg) + 3);
+            logMsg = realloc(logMsg, strlen(sender) + strlen(userName) + strlen(msg) + 3);
             sprintf(logMsg, "%s:%s:%s", sender, userName, msg);
             buildLog(logMsg, 0);
 
@@ -137,7 +138,6 @@ bool readFromBufferPC(char **sender, char **receiver, char **msg) {
 
         isBrd = true;
     }
-
 
     *msg = strdup(BufferPC->message[BufferPC->readpos]);
 
@@ -227,6 +227,7 @@ void writeOnBufferPC(char *msg) {
 
     pthread_cond_signal(&BufferPC->EMPTY);
     pthread_mutex_unlock(&BufferPC->buffMux);
+
 
     free(tmpBuff);
 

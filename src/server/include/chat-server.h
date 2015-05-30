@@ -11,6 +11,7 @@
 extern char *userFile;
 extern char *logFile;
 extern sig_atomic_t go;
+extern int numThreadAttivi;
 
 void sighand(int sig);
 

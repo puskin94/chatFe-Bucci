@@ -28,6 +28,7 @@ sig_atomic_t go;
 char *userFile;
 char *logFile;
 
+
 void sighand(int sig);
 
 
@@ -77,7 +78,7 @@ int main(int argc, char *argv[]) {
 
 void sighand(int sig) {
 
-    int sockId, receiverId;
+    int sockId, receiverId, numThreadAttivi;
     char *msg, *userName, *receiver, *tmpBuff, *logMsg;
     struct sockaddr_in closeConn;
 
@@ -110,23 +111,28 @@ void sighand(int sig) {
 
         connect(sockId, (struct sockaddr *)&closeConn, sizeof(closeConn));
 
-        listUser(&tmpBuff);
-        receiver = strndup(tmpBuff + 6, strlen(tmpBuff) - 6);
+        while (numThreadAttivi != 0) {
 
-        userName = strtok(receiver, ":");
-        msg = strdup(P_LOGOUT);
+            listUser(&tmpBuff);
+            receiver = strndup(tmpBuff + 6, strlen(tmpBuff) - 6);
+
+            userName = strtok(receiver, ":");
+            msg = strdup(P_LOGOUT);
 
 
-        do {
-            receiverId = returnSockId(userName, hashUser);
+            do {
+                receiverId = returnSockId(userName, hashUser);
 
-            if(send(receiverId , msg , strlen(msg), 0) < 0) {
-                logMsg = strdup("[!] Cannot send Shutdown message to the clients");
-                buildLog(logMsg, 1);
-            }
+                if(send(receiverId , msg , strlen(msg), 0) < 0) {
+                    logMsg = strdup("[!] Cannot send Shutdown message to the clients");
+                    buildLog(logMsg, 1);
+                } else {
+                    numThreadAttivi--;
+                }
 
-            userName = strtok(NULL, ":");
-        } while (userName != NULL);
+                userName = strtok(NULL, ":");
+            } while (userName != NULL);
+        }
 
         close(sockId);
 

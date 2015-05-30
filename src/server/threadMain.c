@@ -26,12 +26,12 @@ sig_atomic_t go;
 
 
 int sockId;
-int numThreadAttivi = 0;
-
 
 void *launchThreadMain(void *arg) {
 
     int sockId, len, retval, newConn;
+
+    int numThreadAttivi = 0;
 
 
     struct sockaddr_in server;
@@ -95,6 +95,8 @@ void *launchThreadMain(void *arg) {
 
                 if(pthread_create(&threadWorker, &attr, &launchThreadWorker, (void *)&newConn) != 0) {
                     buildLog("Failed to create threadWorker", 1);
+                } else {
+                    numThreadAttivi++;
                 }
             }
         }

@@ -53,31 +53,33 @@ bool readUserFile() {
     if (fp == NULL) {
         fp = fopen(userFile, "w");
         readUserFile();
-    }
+    } else {
 
-    HASH_TABLE = CREAHASH();
-    OnUser = CREALISTA();
-    NewUser = CREALISTA();
+        HASH_TABLE = CREAHASH();
+        OnUser = CREALISTA();
+        NewUser = CREALISTA();
 
-    while (fgets (userInfo, sizeof(userInfo), fp)) {
+        while (fgets (userInfo, sizeof(userInfo), fp)) {
 
-        user = (hdata_t *) malloc(sizeof(hdata_t));
+            user = (hdata_t *) malloc(sizeof(hdata_t));
 
-        userName = strdup(strtok(userInfo, ":"));
-        fullName = strdup(strtok(NULL, ":"));
-        mail = strdup(strtok(NULL, ":\n"));
+            userName = strdup(strtok(userInfo, ":"));
+            fullName = strdup(strtok(NULL, ":"));
+            mail = strdup(strtok(NULL, ":\n"));
 
-        if (userName != NULL && fullName != NULL && mail != NULL) {
+            if (userName != NULL && fullName != NULL && mail != NULL) {
 
-            user->uname = userName;
-            user->fullname = fullName;
-            user->email = mail;
-            user->sockid = -1;
+                user->uname = userName;
+                user->fullname = fullName;
+                user->email = mail;
+                user->sockid = -1;
 
-            INSERISCIHASH(user->uname, (void*) user, HASH_TABLE);
+                INSERISCIHASH(user->uname, (void*) user, HASH_TABLE);
+            }
         }
-    }
 
+        free(userName); free(fullName); free(mail);
+    }
     fclose(fp);
     return true;
 
