@@ -32,12 +32,10 @@ void timestamp(char * ts) {
 void writeToLog(char *message) {
 
     FILE *fp;
-    pthread_mutex_lock(&logMux);
     fp = fopen(logFile, "a");
 
     fprintf(fp,"%s", message);
     fclose(fp);
-    pthread_mutex_unlock(&logMux);
 
 }
 
@@ -60,7 +58,12 @@ void buildLog(char *message, int action) {
         fprintf(stderr,errorMsg);
     }
 
+    pthread_mutex_lock(&logMux);
+
     writeToLog(errorMsg);
+
+    pthread_mutex_unlock(&logMux);
+
     free(errorMsg);
 
 }

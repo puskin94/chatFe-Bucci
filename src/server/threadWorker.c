@@ -301,7 +301,6 @@ void readAndLoadFromSocket(int sock, int len) {
         msg_T->msg = strdup(tmpBuff);
     }
 
-    bzero(tmpBuff, lenToAllocate);
             // ORA TUTTO IL MESSAGGIO È STATO MESSO DENTRO LA STRUTTURA
 
 /*        printf("type: %c\n", msg_T->type);
@@ -309,5 +308,8 @@ void readAndLoadFromSocket(int sock, int len) {
         printf("receiver: %s\n", msg_T->receiver);
         printf("msglen: %d\n", msg_T->msglen);
         printf("mesg: %s\n\n", msg_T->msg);*/
+
+
+    free(buffer); free(tmpBuff); free(strLen);
 
 }

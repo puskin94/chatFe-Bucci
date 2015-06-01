@@ -101,6 +101,7 @@ void *launchThreadReader(void *newConn) {
             }
 
             if (isGood) {
+                printf("devo inviare:%s\n", msgToSend);
                 if(send(sock , msgToSend , numChars , 0) < 0) {
                     fprintf(stderr,"Cannot send the message to the server\n");
                 }

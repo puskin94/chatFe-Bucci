@@ -17,6 +17,7 @@
 #include "include/hash.h"
 #include "include/userManagement.h"
 #include "include/threadDispatcher.h"
+#include "include/threadMain.h"
 
 
 #define MSG_LOGIN 'L'
@@ -27,6 +28,11 @@
 #define MSG_BRDCAST 'B'
 #define MSG_LIST 'I'
 #define MSG_LOGOUT 'X'
+
+#define P_LOGOUT "00000O"
+
+
+sig_atomic_t go;
 
 
 typedef struct {
@@ -40,10 +46,13 @@ typedef struct {
     pthread_cond_t EMPTY;
 } buffStruct;
 
-
+// rendo la struttura precedentemente definita, accessibile a tutte le funzioni
+// contenute in questo file
 buffStruct bufferPC;
 buffStruct *BufferPC = &bufferPC;
 
+/* il cuore pulsante dell'intero progetto. Ha il compito di smistare i messaggi
+ai vari client connessi. La seguente funzione legge dal buffer ed invia i dati*/
 
 void *launchThreadDispatcher() {
 
@@ -60,18 +69,25 @@ void *launchThreadDispatcher() {
     receiver = malloc(sizeof(char));
     msg = malloc(sizeof(char));
 
+    // prima di tutto inizializzo la struttura con valori di dafault
     initStruct();
 
     while(go) {
 
+        // resto in ascolto sul buffer circolare... ad ogni nuova richiesta
+        // estraggo i dati necessari da elaborare
         isBrd = readFromBufferPC(&sender, &receiver, &msg);
 
+        // il campo "receiver" ottenuto prima è diviso da ":"
         userName = strtok(receiver, ":");
 
 
         do {
+            // ogni utente ognline ha associato al proprio username un SockId
             receiverId = returnSockId(userName, hashUser);
 
+
+            // il messaggio viene inviato diversamente in base alla propia destinazione
             if (!isBrd) {
                 sendBuffer = realloc(sendBuffer, 6 + strlen(sender) + 1 + strlen(userName) + 2 + strlen(msg));
                 sprintf(sendBuffer, "%06zu%s:%s:%s", strlen(sender) + 1 + strlen(userName) + 1 + strlen(msg),
@@ -86,6 +102,7 @@ void *launchThreadDispatcher() {
             }
 
 
+            // controllo che i dati vengano spediti correttamente
             if(send(receiverId , sendBuffer , strlen(sendBuffer), 0) < 0) {
                 logMsg = strdup("[!] Cannot send Infos to the client!");
                 buildLog(logMsg, 1);
@@ -109,6 +126,9 @@ void *launchThreadDispatcher() {
 }
 
 
+
+/* Questa funzione riceve in ingresso 3 buffer che ha il compito di riempire
+leggendo i dati opportunamente formattai dal BufferPC*/
 bool readFromBufferPC(char **sender, char **receiver, char **msg) {
 
     bool isBrd = false;
@@ -137,6 +157,7 @@ bool readFromBufferPC(char **sender, char **receiver, char **msg) {
         strcpy(*receiver, tmpBuff+6);
 
         isBrd = true;
+        free(tmpBuff);
     }
 
     *msg = strdup(BufferPC->message[BufferPC->readpos]);
@@ -146,7 +167,6 @@ bool readFromBufferPC(char **sender, char **receiver, char **msg) {
 
     pthread_mutex_unlock(&BufferPC->buffMux);
 
-    free(tmpBuff);
     return isBrd;
 }
 
@@ -224,13 +244,47 @@ void writeOnBufferPC(char *msg) {
     BufferPC->writepos = (BufferPC->writepos + 1) % K;
     BufferPC->count++;
 
+    free(tmpBuff);
 
     pthread_cond_signal(&BufferPC->EMPTY);
     pthread_mutex_unlock(&BufferPC->buffMux);
 
+}
 
-    free(tmpBuff);
+bool massiveLogout() {
 
+    int receiverId;
+    char *msg, *userName, *receiver, *tmpBuff, *logMsg;
+
+    hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
+
+    tmpBuff = malloc(sizeof(char));
+    receiver = malloc(sizeof(char));
+    userName = malloc(sizeof(char));
+
+    msg = strdup(P_LOGOUT);
+
+
+    listUser(&tmpBuff);
+    receiver = strndup(tmpBuff + 6, strlen(tmpBuff) - 6);
+
+    userName = strtok(receiver, ":");
+
+
+    do {
+        receiverId = returnSockId(userName, hashUser);
+
+        if(send(receiverId , msg , strlen(msg), 0) < 0) {
+            logMsg = strdup("[!] Cannot send Shutdown message to the clients");
+            buildLog(logMsg, 1);
+        }
+
+        userName = strtok(NULL, ":");
+    } while (userName != NULL);
+
+
+
+    return true;
 }
 
 void initStruct() {

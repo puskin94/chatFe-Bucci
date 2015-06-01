@@ -18,18 +18,17 @@
 #include "include/threadDispatcher.h"
 #include "include/userManagement.h"
 
+
 #define PORT 7778
-#define P_LOGOUT "00000O"
 
 // variabile di tipo sig_atomic , necessaria per il signal handler
-// è di tipo "atomico" perchè stiamo lavorando con i thread
+// è di tipo "atomico" perchè stiamo lavorando con i thread. Alcuni segnali potrebbero
+// sovrapporsi portando ad una variabile "impura"
 sig_atomic_t go;
 
 char *userFile;
 char *logFile;
 
-
-void sighand(int sig);
 
 
 int main(int argc, char *argv[]) {
@@ -39,6 +38,7 @@ int main(int argc, char *argv[]) {
     go = true;
     int pid;
 
+    // questa è una struttura che contiene dati relativi al signalHandling
     struct sigaction sigHandling;
     sigHandling.sa_handler = sighand;
 
@@ -52,9 +52,12 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    // le variabili "extern" definite nei file .h vengono riempite con i dati
+    // passati da linea di comando
     userFile = argv[1];
     logFile = argv[2];
 
+    // raccolgo il risultato della fork per i successivi controlli
     pid = fork();
 
     // se il processo figlio viene creato correttamente, avvia il threadMain
@@ -62,11 +65,13 @@ int main(int argc, char *argv[]) {
         // Viene creato il thread Main
         // e gli viene imposta l'esecuzione della funzione 'launchThreadMain'
 
+        // se il thread non viene creato correttamente scrivo sul log file
         if (pthread_create(&threadMain, NULL, &launchThreadMain, NULL)!= 0) {
             buildLog("Failed to create threadMain", 1);
             return -5;
         }
 
+        // aspettiamo il threadMain
         pthread_join(threadMain, NULL);
 
     } else if (pid < 0) {
@@ -78,65 +83,32 @@ int main(int argc, char *argv[]) {
 
 void sighand(int sig) {
 
-    int sockId, receiverId, numThreadAttivi;
-    char *msg, *userName, *receiver, *tmpBuff, *logMsg;
-    struct sockaddr_in closeConn;
-
-    hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
-
-    tmpBuff = malloc(sizeof(char));
-    receiver = malloc(sizeof(char));
-    userName = malloc(sizeof(char));
-
-
 
     if ( sig == SIGINT || sig == SIGTERM ) {
+
+        int sockId;
+        struct sockaddr_in closeConn;
+
         go = false;
 
         // saveTable appende al file degli utenti, i dati degli utenti registrati
         // durante la sessione del server
         saveTable();
 
-        /* per 'saziare' i vari socket ancora attivi in attesa, viene creata una
-        connessione fasulla. Invece per far disconnettere tutti i client una volta
-        che si è deciso che il server vada spento, viene inviato in broadcast
-        a tutti gli utenti connessi un messaggio speciale che li invita
-        (non troppo gentilmente) a fare il logout*/
+        // per 'saziare' i vari socket ancora attivi in attesa, viene creata una
+        // connessione fasulla.
         closeConn.sin_family = AF_INET;
         closeConn.sin_port = htons(PORT);
         closeConn.sin_addr.s_addr = INADDR_ANY;
 
         sockId = socket(AF_INET, SOCK_STREAM, 0);
 
-
         connect(sockId, (struct sockaddr *)&closeConn, sizeof(closeConn));
-
-        while (numThreadAttivi != 0) {
-
-            listUser(&tmpBuff);
-            receiver = strndup(tmpBuff + 6, strlen(tmpBuff) - 6);
-
-            userName = strtok(receiver, ":");
-            msg = strdup(P_LOGOUT);
-
-
-            do {
-                receiverId = returnSockId(userName, hashUser);
-
-                if(send(receiverId , msg , strlen(msg), 0) < 0) {
-                    logMsg = strdup("[!] Cannot send Shutdown message to the clients");
-                    buildLog(logMsg, 1);
-                } else {
-                    numThreadAttivi--;
-                }
-
-                userName = strtok(NULL, ":");
-            } while (userName != NULL);
-        }
-
         close(sockId);
 
+        // alla funzione "massiveLogout" il compito di mandare ai client
+        // il comando di disconnessione
+        massiveLogout();
     }
 
-    free(msg); free(userName); free(receiver); free(tmpBuff); free(logMsg);
 }
