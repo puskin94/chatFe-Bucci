@@ -34,8 +34,10 @@ void writeToLog(char *message) {
     FILE *fp;
     fp = fopen(logFile, "a");
 
-    fprintf(fp,"%s", message);
-    fclose(fp);
+    if (fp != NULL) {
+        fprintf(fp,"%s", message);
+        fclose(fp);
+    }
 
 }
 

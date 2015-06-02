@@ -57,13 +57,12 @@ ai vari client connessi. La seguente funzione legge dal buffer ed invia i dati*/
 void *launchThreadDispatcher() {
 
     char *sender, *receiver, *msg, *sendBuffer, *userName, *logMsg;
-    bool go = true, isBrd;
-    int receiverId;
-
-    hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
+    bool go = true;
+    int receiverId, msgType, msgLen;
 
     sendBuffer = malloc(sizeof(char));
 
+    userName = malloc(sizeof(char));
     logMsg = malloc(sizeof(char));
     sender = malloc(sizeof(char));
     receiver = malloc(sizeof(char));
@@ -76,44 +75,50 @@ void *launchThreadDispatcher() {
 
         // resto in ascolto sul buffer circolare... ad ogni nuova richiesta
         // estraggo i dati necessari da elaborare
-        isBrd = readFromBufferPC(&sender, &receiver, &msg);
+        msgType = readFromBufferPC(&sender, &receiver, &msg);
 
         // il campo "receiver" ottenuto prima è diviso da ":"
         userName = strtok(receiver, ":");
 
-
         do {
-            // ogni utente ognline ha associato al proprio username un SockId
-            receiverId = returnSockId(userName, hashUser);
-
+            // ogni utente online ha associato al proprio username un SockId
+            receiverId = returnSockId(userName);
 
             // il messaggio viene inviato diversamente in base alla propia destinazione
-            if (!isBrd) {
-                sendBuffer = realloc(sendBuffer, 6 + strlen(sender) + 1 + strlen(userName) + 2 + strlen(msg));
+            if (msgType == 0) {
+                msgLen = 6 + strlen(sender) + 1 + strlen(userName) + 2 + strlen(msg);
+                sendBuffer = realloc(sendBuffer, msgLen);
                 sprintf(sendBuffer, "%06zu%s:%s:%s", strlen(sender) + 1 + strlen(userName) + 1 + strlen(msg),
                                                     sender,
                                                     userName,
                                                     msg);
-            } else {
-                sendBuffer = realloc(sendBuffer, 6 + strlen(sender) + 4 + strlen(msg));
+            } else if (msgType == 1) {
+                msgLen = 6 + strlen(sender) + 4 + strlen(msg);
+                sendBuffer = realloc(sendBuffer, msgLen);
                 sprintf(sendBuffer, "%06zu%s:*:%s", strlen(sender) + 3 + strlen(msg),
                                                     sender,
                                                     msg);
+            } else {
+                sendBuffer = realloc(sendBuffer, 7);
+                sprintf(sendBuffer, "%s", P_LOGOUT);
             }
 
 
             // controllo che i dati vengano spediti correttamente
             if(send(receiverId , sendBuffer , strlen(sendBuffer), 0) < 0) {
-                logMsg = strdup("[!] Cannot send Infos to the client!");
-                buildLog(logMsg, 1);
+                buildLog("[!] Cannot send Infos to the client!", 1);
             }
 
+            bzero(sendBuffer, msgLen);
 
-            // scrivo sul log-file i messaggi
-            logMsg = realloc(logMsg, strlen(sender) + strlen(userName) + strlen(msg) + 3);
-            sprintf(logMsg, "%s:%s:%s", sender, userName, msg);
-            buildLog(logMsg, 0);
-
+            if (msgType != 2) {
+                // scrivo sul log-file i messaggi
+                msgLen = strlen(sender) + strlen(userName) + strlen(msg) + 3;
+                logMsg = realloc(logMsg, msgLen);
+                sprintf(logMsg, "%s:%s:%s", sender, userName, msg);
+                buildLog(logMsg, 0);
+                bzero(logMsg, msgLen);
+            }
 
             // prendo l'username seguente
             userName = strtok(NULL, ":");
@@ -129,9 +134,9 @@ void *launchThreadDispatcher() {
 
 /* Questa funzione riceve in ingresso 3 buffer che ha il compito di riempire
 leggendo i dati opportunamente formattai dal BufferPC*/
-bool readFromBufferPC(char **sender, char **receiver, char **msg) {
+int readFromBufferPC(char **sender, char **receiver, char **msg) {
 
-    bool isBrd = false;
+    int msgType = 0;
 
     char *tmpBuff = malloc(sizeof(char));
 
@@ -140,24 +145,26 @@ bool readFromBufferPC(char **sender, char **receiver, char **msg) {
         pthread_cond_wait(&BufferPC->EMPTY, &BufferPC->buffMux);
     }
 
-
-    *sender = strdup(BufferPC->sender[BufferPC->readpos]);
-
     // se BufferPC->receiver è diverso da '*', vuol dire
     // che si tratta di un messaggio singolo, altrimenti è un messaggio broadcast
     if (strcmp(BufferPC->receiver[BufferPC->readpos], "*") != 0) {
-        *receiver = strdup(BufferPC->receiver[BufferPC->readpos]);
+
+        *receiver = realloc(*receiver, strlen(BufferPC->receiver[BufferPC->readpos]));
+        strcpy(*receiver, BufferPC->receiver[BufferPC->readpos]);
     } else {
         // listUser restituisce una stringa già formattata
         // per l'invio ( richiesta #ls ). Per adattarla allo scopo di questa funzione
         // bisogna utilizzare il suo contenuto dal settimo byte in poi
         listUser(&tmpBuff);
-        *receiver = realloc(*receiver, strlen(tmpBuff+6));
-        bzero(*receiver, strlen(tmpBuff+6));
-        strcpy(*receiver, tmpBuff+6);
+        *receiver = realloc(*receiver, strlen(tmpBuff) - 6);
+        strncpy(*receiver, &tmpBuff[6], strlen(tmpBuff) - 6);
+        msgType = 1;
 
-        isBrd = true;
-        free(tmpBuff);
+    }
+
+    *sender = strdup(BufferPC->sender[BufferPC->readpos]);
+    if (*sender == NULL) {
+        msgType = 2;
     }
 
     *msg = strdup(BufferPC->message[BufferPC->readpos]);
@@ -167,7 +174,7 @@ bool readFromBufferPC(char **sender, char **receiver, char **msg) {
 
     pthread_mutex_unlock(&BufferPC->buffMux);
 
-    return isBrd;
+    return msgType;
 }
 
 
@@ -221,71 +228,45 @@ void writeOnBufferPC(char *msg) {
     tmpBuff = realloc(tmpBuff, sizeof(char) * 3);
     strncpy(tmpBuff, msg + charsRead, 3);
     charsRead += 3;
-    // alloco lo spazio necessario per il sender nella struttura
-    BufferPC->sender[BufferPC->writepos] = malloc(sizeof(char) * atoi(tmpBuff));
-    // popolo il campo
-    strncpy(BufferPC->sender[BufferPC->writepos], msg + charsRead, atoi(tmpBuff));
-    charsRead += atoi(tmpBuff);
+    if (atoi(tmpBuff) != 0) {
+        // alloco lo spazio necessario per il sender nella struttura
+        BufferPC->sender[BufferPC->writepos] = malloc(sizeof(char) * atoi(tmpBuff));
+        // popolo il campo
+        strncpy(BufferPC->sender[BufferPC->writepos], msg + charsRead, atoi(tmpBuff));
+        charsRead += atoi(tmpBuff);
 
-    // pulisco il buffer per evitare dati impuri
-    bzero(tmpBuff, 3);
 
-    // copio la lunghezza del messaggio dentro tmpBuff
-    tmpBuff = realloc(tmpBuff, sizeof(char) * 5);
-    strncpy(tmpBuff, msg + charsRead, 5);
-    charsRead += 5;
-    // alloco lo spazio necessario per il messaggio nella struttura
+        // pulisco il buffer per evitare dati impuri
+        bzero(tmpBuff, 3);
+
+        // copio la lunghezza del messaggio dentro tmpBuff
+        tmpBuff = realloc(tmpBuff, sizeof(char) * 5);
+        strncpy(tmpBuff, msg + charsRead, 5);
+        charsRead += 5;
+
+    } else {
+        // pulisco il buffer per evitare dati impuri
+        bzero(tmpBuff, 3);
+
+        // copio la lunghezza del messaggio dentro tmpBuff
+        tmpBuff = realloc(tmpBuff, sizeof(char) * 6);
+        strncpy(tmpBuff, msg + charsRead, 6);
+        charsRead += 6;
+    }
+
     BufferPC->message[BufferPC->writepos] = malloc(sizeof(char) * atoi(tmpBuff));
     // popolo il campo
-
     strncpy(BufferPC->message[BufferPC->writepos], msg + charsRead, atoi(tmpBuff));
 
 
     BufferPC->writepos = (BufferPC->writepos + 1) % K;
     BufferPC->count++;
 
-    free(tmpBuff);
 
     pthread_cond_signal(&BufferPC->EMPTY);
     pthread_mutex_unlock(&BufferPC->buffMux);
-
 }
 
-bool massiveLogout() {
-
-    int receiverId;
-    char *msg, *userName, *receiver, *tmpBuff, *logMsg;
-
-    hdata_t *hashUser = (hdata_t *) malloc(sizeof(struct msg_t*));
-
-    tmpBuff = malloc(sizeof(char));
-    receiver = malloc(sizeof(char));
-    userName = malloc(sizeof(char));
-
-    msg = strdup(P_LOGOUT);
-
-
-    listUser(&tmpBuff);
-    receiver = strndup(tmpBuff + 6, strlen(tmpBuff) - 6);
-
-    userName = strtok(receiver, ":");
-
-
-    do {
-        receiverId = returnSockId(userName, hashUser);
-
-        if(send(receiverId , msg , strlen(msg), 0) < 0) {
-            logMsg = strdup("[!] Cannot send Shutdown message to the clients");
-            buildLog(logMsg, 1);
-        }
-
-        userName = strtok(NULL, ":");
-    } while (userName != NULL);
-
-
-
-    return true;
-}
 
 void initStruct() {
     BufferPC->readpos = 0;

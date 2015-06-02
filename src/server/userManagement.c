@@ -207,11 +207,11 @@ void listUser(char **tmpBuff) {
         }
         el = SUCCLISTA(el);
     }
-    *tmpBuff = malloc(7 + sizeof(buff));
+    *tmpBuff = realloc(*tmpBuff, 7 + sizeof(buff));
+    bzero(*tmpBuff, 7 + sizeof(buff));
     sprintf(*tmpBuff, "%06zu%s", strlen(buff), buff);
 
     pthread_mutex_unlock(&userMux);
-    free(buff);
 }
 
 void saveTable() {

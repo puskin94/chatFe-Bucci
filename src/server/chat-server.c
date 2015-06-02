@@ -83,6 +83,8 @@ int main(int argc, char *argv[]) {
 
 void sighand(int sig) {
 
+    pthread_mutex_t mux = PTHREAD_MUTEX_INITIALIZER;
+
 
     if ( sig == SIGINT || sig == SIGTERM ) {
 
@@ -106,9 +108,11 @@ void sighand(int sig) {
         connect(sockId, (struct sockaddr *)&closeConn, sizeof(closeConn));
         close(sockId);
 
-        // alla funzione "massiveLogout" il compito di mandare ai client
+        // alla funzione "writeOnBufferPC" il compito di mandare ai client
         // il comando di disconnessione
-        massiveLogout();
+        pthread_mutex_lock(&mux);
+        writeOnBufferPC("B00000000O");
+        pthread_mutex_unlock(&mux);
     }
 
 }

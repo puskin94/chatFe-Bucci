@@ -10,7 +10,7 @@ bool readUserFile();
 bool registerNewUser(char *msg);
 bool isInTable(char *user);
 int loginUser(char *user, int sock);
-int returnSockId(char *user, hdata_t *bs);
+int returnSockId(char *user);
 void listUser(char **tmpBuff);
 void logout(char *user);
 void saveTable();
